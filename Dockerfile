@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # Etapa 2: PHP + Laravel
-FROM php:8.2-cli
+FROM php:8.3-cli
 
 RUN apt-get update && apt-get install -y \
     git unzip libzip-dev libpng-dev libonig-dev \
