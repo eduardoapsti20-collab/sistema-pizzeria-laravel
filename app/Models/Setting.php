@@ -22,6 +22,12 @@ class Setting extends Model
         'printer_name',
         'kitchen_printer_name',
         'social_networks',
+
+        'nubefact_ruta',
+        'nubefact_token',
+        'nubefact_ambiente',
+        'nubefact_serie_boleta',
+        'nubefact_serie_factura',
     ];
 
     protected $casts = [

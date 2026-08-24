@@ -385,6 +385,71 @@
                         </button>
                     </div>
 
+                    <div class="lg:col-span-3">
+                        <div class="bg-white p-6 md:p-8 shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                <i class="fas fa-file-invoice text-orange-500"></i> Facturación Electrónica (SUNAT / Nubefact)
+                            </h3>
+                            <p class="text-slate-500 text-sm mb-6">Pega aquí la Ruta y el Token que te da Nubefact. Podrás cambiarlos aquí mismo cuando pases de modo demo a producción, sin tocar el código.</p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div class="md:col-span-2 space-y-1">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ruta (URL) de la API</label>
+                                    <input type="text" name="nubefact_ruta"
+                                        value="{{ old('nubefact_ruta', $setting->nubefact_ruta) }}"
+                                        placeholder="https://api.nubefact.com/api/v1/TU-RUTA"
+                                        class="w-full rounded-xl @error('nubefact_ruta') border-red-500 focus:ring-red-500/10 focus:border-red-500 @else border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 @enderror transition-all font-medium">
+                                    @error('nubefact_ruta')
+                                        <p class="text-xs text-red-500 font-semibold mt-1 ml-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="md:col-span-2 space-y-1">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Token</label>
+                                    <div class="relative">
+                                        <input type="password" name="nubefact_token" id="nubefact_token"
+                                            value="{{ old('nubefact_token', $setting->nubefact_token) }}"
+                                            placeholder="Tu token secreto de Nubefact"
+                                            class="w-full rounded-xl pr-12 @error('nubefact_token') border-red-500 focus:ring-red-500/10 focus:border-red-500 @else border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 @enderror transition-all font-medium">
+                                        <button type="button" onclick="const i=document.getElementById('nubefact_token'); i.type = i.type==='password' ? 'text' : 'password';"
+                                            class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-orange-600">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    @error('nubefact_token')
+                                        <p class="text-xs text-red-500 font-semibold mt-1 ml-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ambiente</label>
+                                    <select name="nubefact_ambiente"
+                                        class="w-full rounded-xl border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-medium">
+                                        <option value="demo" {{ old('nubefact_ambiente', $setting->nubefact_ambiente) == 'demo' ? 'selected' : '' }}>Demo (pruebas)</option>
+                                        <option value="produccion" {{ old('nubefact_ambiente', $setting->nubefact_ambiente) == 'produccion' ? 'selected' : '' }}>Producción</option>
+                                    </select>
+                                </div>
+
+                                <div class="space-y-1">
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Serie Boleta</label>
+                                    <input type="text" name="nubefact_serie_boleta"
+                                        value="{{ old('nubefact_serie_boleta', $setting->nubefact_serie_boleta ?? 'B001') }}"
+                                        class="w-full rounded-xl border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-medium">
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Serie Factura</label>
+                                    <input type="text" name="nubefact_serie_factura"
+                                        value="{{ old('nubefact_serie_factura', $setting->nubefact_serie_factura ?? 'F001') }}"
+                                        class="w-full rounded-xl border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-medium">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </form>
         </div>

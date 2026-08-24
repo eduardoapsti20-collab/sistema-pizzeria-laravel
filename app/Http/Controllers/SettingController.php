@@ -38,6 +38,12 @@ class SettingController extends Controller
 
             'kitchen_printer_name' => 'nullable|string|max:255',
 
+            'nubefact_ruta' => 'nullable|url|max:255',
+            'nubefact_token' => 'nullable|string|max:255',
+            'nubefact_ambiente' => 'nullable|in:demo,produccion',
+            'nubefact_serie_boleta' => 'nullable|string|max:10',
+            'nubefact_serie_factura' => 'nullable|string|max:10',
+
         ], [
             'company_name.required' => 'El nombre comercial de la empresa es obligatorio.',
             'company_email.required' => 'El correo electrónico de soporte es requerido.',
