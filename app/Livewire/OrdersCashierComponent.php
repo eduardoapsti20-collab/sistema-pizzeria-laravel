@@ -36,6 +36,13 @@ class OrdersCashierComponent extends Component
     public $tax = 0;
     public $tip = 0;
 
+    // Tipo de comprobante a emitir: nota_venta (sin SUNAT), boleta, factura
+    public $tipoComprobante = 'nota_venta';
+    public $clienteTipoDocumento = 'DNI'; // DNI o RUC
+    public $clienteNumeroDocumento = '';
+    public $clienteDenominacion = '';
+    public $clienteDireccion = '';
+
     public function mount()
     {
         $setting = Setting::first();
@@ -140,11 +147,41 @@ class OrdersCashierComponent extends Component
     {
         $this->payments = [];
         $this->selectedMethod = null;
+        $this->tipoComprobante = 'nota_venta';
+        $this->clienteTipoDocumento = 'DNI';
+        $this->clienteNumeroDocumento = '';
+        $this->clienteDenominacion = '';
+        $this->clienteDireccion = '';
         $this->showPaymentModal = true;
+    }
+
+    public function setTipoComprobante($tipo)
+    {
+        $this->tipoComprobante = $tipo;
+        $this->clienteTipoDocumento = $tipo === 'factura' ? 'RUC' : 'DNI';
     }
 
     public function processPayment()
     {
+        if (in_array($this->tipoComprobante, ['boleta', 'factura'])) {
+            $reglas = [
+                'clienteNumeroDocumento' => $this->tipoComprobante === 'factura'
+                    ? 'required|digits:11'
+                    : 'nullable|digits_between:1,15',
+                'clienteDenominacion' => $this->tipoComprobante === 'factura'
+                    ? 'required|string|max:255'
+                    : 'nullable|string|max:255',
+            ];
+
+            $mensajes = [
+                'clienteNumeroDocumento.required' => 'La factura requiere el RUC del cliente.',
+                'clienteNumeroDocumento.digits' => 'El RUC debe tener 11 dígitos.',
+                'clienteDenominacion.required' => 'La factura requiere la razón social del cliente.',
+            ];
+
+            $this->validate($reglas, $mensajes);
+        }
+
         if (!$this->boxId) {
             $this->dispatch('swal', [
                 'title' => 'Error',
@@ -207,6 +244,15 @@ class OrdersCashierComponent extends Component
                 'paid_amount' => $this->paid,
                 'change' => $change,
                 'paid_at' => now(),
+
+                'tipo_comprobante' => $this->tipoComprobante,
+                'cliente_tipo_documento' => in_array($this->tipoComprobante, ['boleta', 'factura'])
+                    ? $this->clienteTipoDocumento
+                    : null,
+                'cliente_numero_documento' => $this->clienteNumeroDocumento ?: null,
+                'cliente_denominacion' => $this->clienteDenominacion ?: null,
+                'cliente_direccion' => $this->clienteDireccion ?: null,
+                'estado_sunat' => in_array($this->tipoComprobante, ['boleta', 'factura']) ? 'pendiente' : 'no_aplica',
             ]);
 
             foreach ($details as $detail) {
@@ -304,6 +350,13 @@ class OrdersCashierComponent extends Component
                 'url' => $url,
                 'printer_name' => $this->printer_name
             ]);
+
+            // Fase 3: aqui se despachara un Job en segundo plano para emitir
+            // boleta/factura ante SUNAT via Nubefact, sin bloquear al cajero.
+            // if ($sale->requiereSunat()) {
+            //     EmitirComprobanteJob::dispatch($sale);
+            // }
+
             $this->resetPaymentFields();
             $this->reset(['boxId', 'tip']);
 

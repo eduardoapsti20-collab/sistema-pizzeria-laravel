@@ -202,6 +202,68 @@
 
                     <div class="p-6">
 
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">
+                                Comprobante a emitir
+                            </label>
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <button type="button" wire:click="setTipoComprobante('nota_venta')"
+                                    class="py-2.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all border-2
+                                        {{ $tipoComprobante === 'nota_venta' ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300' }}">
+                                    Nota de venta
+                                </button>
+                                <button type="button" wire:click="setTipoComprobante('boleta')"
+                                    class="py-2.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all border-2
+                                        {{ $tipoComprobante === 'boleta' ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300' }}">
+                                    Boleta
+                                </button>
+                                <button type="button" wire:click="setTipoComprobante('factura')"
+                                    class="py-2.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all border-2
+                                        {{ $tipoComprobante === 'factura' ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300' }}">
+                                    Factura
+                                </button>
+                            </div>
+
+                            @if (in_array($tipoComprobante, ['boleta', 'factura']))
+                                <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100">
+                                    <div>
+                                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">
+                                            {{ $tipoComprobante === 'factura' ? 'RUC (obligatorio)' : 'DNI (opcional)' }}
+                                        </label>
+                                        <input type="text" wire:model="clienteNumeroDocumento"
+                                            maxlength="{{ $tipoComprobante === 'factura' ? 11 : 8 }}"
+                                            placeholder="{{ $tipoComprobante === 'factura' ? '20123456789' : '12345678' }}"
+                                            class="w-full bg-slate-50 border-slate-200 rounded-lg py-1.5 px-3 text-sm">
+                                        @error('clienteNumeroDocumento')
+                                            <span class="text-[10px] text-rose-500 ml-1">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">
+                                            {{ $tipoComprobante === 'factura' ? 'Razón social (obligatorio)' : 'Nombre (opcional)' }}
+                                        </label>
+                                        <input type="text" wire:model="clienteDenominacion"
+                                            placeholder="{{ $tipoComprobante === 'factura' ? 'Empresa S.A.C.' : 'Cliente Varios' }}"
+                                            class="w-full bg-slate-50 border-slate-200 rounded-lg py-1.5 px-3 text-sm">
+                                        @error('clienteDenominacion')
+                                            <span class="text-[10px] text-rose-500 ml-1">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                    @if ($tipoComprobante === 'factura')
+                                        <div class="col-span-2">
+                                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">
+                                                Dirección (opcional)
+                                            </label>
+                                            <input type="text" wire:model="clienteDireccion"
+                                                placeholder="Av. Ejemplo 123"
+                                                class="w-full bg-slate-50 border-slate-200 rounded-lg py-1.5 px-3 text-sm">
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+
                         <div class="flex items-end gap-2 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
 
                             <div class="flex-1">
