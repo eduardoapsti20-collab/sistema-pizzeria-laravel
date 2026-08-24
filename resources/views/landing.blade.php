@@ -1,3 +1,10 @@
+@php
+    $telefonoWa = $setting && $setting->company_phone
+        ? preg_replace('/[^0-9]/', '', $setting->company_phone)
+        : '51987654321';
+    $redesSociales = $setting->social_networks ?? [];
+    $iconosMarca = ['facebook', 'instagram', 'whatsapp', 'twitter', 'linkedin', 'youtube', 'tiktok'];
+@endphp
 <!DOCTYPE html>
 <html lang="es" class="scroll-smooth">
 <head>
@@ -106,7 +113,7 @@
       <a href="#reservas" class="hidden sm:inline-flex items-center gap-2 border-2 border-gold text-gold hover:bg-gold hover:text-ink text-xs font-black uppercase tracking-wider px-5 py-2.5 rounded-full transition-all">
         Reservar mesa <i class="fa-solid fa-calendar-check"></i>
       </a>
-      <a href="https://wa.me/51987654321" class="inline-flex items-center gap-2 bg-rust hover:bg-rust-2 text-white text-xs font-black uppercase tracking-wider px-5 py-3 rounded-full transition-all hover:-translate-y-0.5">
+      <a href="https://wa.me/{{ $telefonoWa }}" class="inline-flex items-center gap-2 bg-rust hover:bg-rust-2 text-white text-xs font-black uppercase tracking-wider px-5 py-3 rounded-full transition-all hover:-translate-y-0.5">
         Pedir ahora <i class="fa-solid fa-cart-shopping"></i>
       </a>
     </div>
@@ -133,7 +140,7 @@
         <a href="#menu" class="inline-flex items-center gap-2 bg-white hover:bg-cream text-[#E8590C] font-black text-sm uppercase tracking-wider px-7 py-4 rounded-full shadow-[0_15px_30px_-10px_rgba(0,0,0,.4)] transition-all hover:-translate-y-1">
           <i class="fa-solid fa-pizza-slice text-xs"></i> Ver menú
         </a>
-        <a href="https://wa.me/51987654321" class="inline-flex items-center gap-2 border-2 border-white/70 text-white font-black text-sm uppercase tracking-wider px-7 py-4 rounded-full hover:bg-white/10 transition-all">
+        <a href="https://wa.me/{{ $telefonoWa }}" class="inline-flex items-center gap-2 border-2 border-white/70 text-white font-black text-sm uppercase tracking-wider px-7 py-4 rounded-full hover:bg-white/10 transition-all">
           <i class="fa-solid fa-phone text-xs"></i> Pedir ahora
         </a>
       </div>
@@ -317,7 +324,7 @@
     <p class="text-white/80 text-sm font-bold uppercase tracking-wide mb-2">Te lo garantizamos</p>
     <h2 class="text-3xl md:text-4xl font-black text-white mb-4">¡Delivery en 25-35 minutos!</h2>
     <p class="text-white/85 mb-8">Si tu pedido demora más de lo prometido, escríbenos y lo resolvemos al toque.</p>
-    <a href="https://wa.me/51987654321" class="inline-flex items-center gap-2 bg-white hover:bg-cream text-rust font-black text-sm uppercase tracking-wider px-8 py-4 rounded-full transition-all hover:-translate-y-1">
+    <a href="https://wa.me/{{ $telefonoWa }}" class="inline-flex items-center gap-2 bg-white hover:bg-cream text-rust font-black text-sm uppercase tracking-wider px-8 py-4 rounded-full transition-all hover:-translate-y-1">
       <i class="fa-brands fa-whatsapp"></i> Pedir ahora
     </a>
   </div>
@@ -352,9 +359,8 @@
         <img src="https://images.unsplash.com/photo-1544145945-f90425340c7e?q=80&w=1000&auto=format&fit=crop" alt="Pizzería Zuñiga San Miguel" class="h-52 w-full object-cover">
         <div class="p-7 text-center">
           <h3 class="text-rust font-black text-lg mb-3">San Miguel</h3>
-          <p class="text-white font-bold text-sm mb-4"><i class="fa-solid fa-phone text-rust mr-2"></i>(01) 123 4567</p>
-          <p class="text-white/50 text-sm mb-1">Av. Los Pinos 1234</p>
-          <p class="text-white/50 text-sm mb-4">San Miguel, Lima, Perú</p>
+          <p class="text-white font-bold text-sm mb-4"><i class="fa-solid fa-phone text-rust mr-2"></i>{{ $setting->company_phone ?? '(01) 123 4567' }}</p>
+          <p class="text-white/50 text-sm mb-4">{{ $setting->company_address ?? 'Av. Los Pinos 1234, San Miguel, Lima, Perú' }}</p>
           <p class="text-white/50 text-sm"><i class="fa-solid fa-clock text-rust mr-1"></i> Todos los días 12:00 p.m. – 10:30 p.m.</p>
         </div>
       </div>
@@ -405,10 +411,14 @@
     <p class="text-white/40 text-sm mb-8">El auténtico sabor italiano. Hecho con pasión desde 2015.</p>
 
     <div class="flex justify-center gap-3 mb-8">
-      <a href="#" class="w-10 h-10 rounded-full border border-gold/40 text-gold hover:bg-gold hover:text-ink flex items-center justify-center transition-colors"><i class="fa-brands fa-facebook-f"></i></a>
-      <a href="#" class="w-10 h-10 rounded-full border border-gold/40 text-gold hover:bg-gold hover:text-ink flex items-center justify-center transition-colors"><i class="fa-brands fa-instagram"></i></a>
-      <a href="#" class="w-10 h-10 rounded-full border border-gold/40 text-gold hover:bg-gold hover:text-ink flex items-center justify-center transition-colors"><i class="fa-brands fa-tiktok"></i></a>
-      <a href="https://wa.me/51987654321" class="w-10 h-10 rounded-full border border-gold/40 text-gold hover:bg-gold hover:text-ink flex items-center justify-center transition-colors"><i class="fa-brands fa-whatsapp"></i></a>
+      @forelse ($redesSociales as $red => $url)
+        @continue(empty($url))
+        <a href="{{ $url }}" target="_blank" rel="noopener" class="w-10 h-10 rounded-full border border-gold/40 text-gold hover:bg-gold hover:text-ink flex items-center justify-center transition-colors">
+          <i class="{{ in_array($red, $iconosMarca) ? 'fa-brands fa-' . $red : 'fa-solid fa-link' }}"></i>
+        </a>
+      @empty
+        <a href="https://wa.me/{{ $telefonoWa }}" class="w-10 h-10 rounded-full border border-gold/40 text-gold hover:bg-gold hover:text-ink flex items-center justify-center transition-colors"><i class="fa-brands fa-whatsapp"></i></a>
+      @endforelse
     </div>
 
     <ul class="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-white/40 mb-8">
@@ -427,7 +437,7 @@
 </footer>
 
 <script>
-  const telefonoNegocio = "51987654321";
+  const telefonoNegocio = "{{ $telefonoWa }}";
 
   const clasicas = [
     ['Americana', 'Mozzarella, jamón y salame', 30, 40, 62, 4.8, 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600&auto=format&fit=crop'],
