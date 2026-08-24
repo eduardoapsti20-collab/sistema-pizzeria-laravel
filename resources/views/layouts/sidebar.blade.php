@@ -195,7 +195,7 @@
             @endcanany
 
             {{-- SECCIÓN: ADMINISTRACIÓN --}}
-            @canany(['ventas.ver', 'productos.ver', 'categorias.ver', 'usuarios.ver', 'roles.ver'])
+            @canany(['ventas.ver', 'productos.ver', 'categorias.ver', 'usuarios.ver', 'roles.ver', 'reportes.financieros'])
                 <li class="pt-5 pb-1" :class="sidebarExpanded ? 'px-3' : 'px-0 text-center'">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]"
                         x-show="sidebarExpanded">Administración</span>
@@ -221,6 +221,30 @@
                             :class="sidebarExpanded ? 'opacity-100 visible w-auto' : 'opacity-0 invisible w-0'">
                             <span class="text-sm {{ $isSalesActive ? 'font-bold' : 'font-medium' }}">
                                 Historial de Ventas
+                            </span>
+                        </div>
+                    </a>
+                </li>
+            @endcan
+
+            {{-- REPORTE FINANCIERO (Ingresos vs Egresos, pensado para el contador) --}}
+            @can('reportes.financieros')
+                @php
+                    $isFinancialActive = request()->routeIs('reports.financial*');
+                @endphp
+                <li>
+                    <a href="{{ route('reports.financial') }}"
+                        class="flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 group
+                        {{ $isFinancialActive ? 'bg-orange-50 text-orange-600' : 'text-slate-600 hover:bg-slate-50 hover:text-orange-600' }}">
+
+                        <i
+                            class="fa-solid fa-chart-line w-5 text-center 
+                            {{ $isFinancialActive ? 'text-orange-600' : 'text-slate-400 group-hover:text-orange-600' }}"></i>
+
+                        <div class="ml-3 transition-all duration-200 overflow-hidden whitespace-nowrap"
+                            :class="sidebarExpanded ? 'opacity-100 visible w-auto' : 'opacity-0 invisible w-0'">
+                            <span class="text-sm {{ $isFinancialActive ? 'font-bold' : 'font-medium' }}">
+                                Ingresos y Egresos
                             </span>
                         </div>
                     </a>

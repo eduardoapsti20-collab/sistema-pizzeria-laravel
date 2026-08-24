@@ -4,6 +4,7 @@ use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CrudController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\FinancialReportController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SaleController;
@@ -59,6 +60,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/reports/sales/pdf', [SaleController::class, 'salesPdf'])->name('sales.report.pdf')->middleware('can:ventas.reportes');
     Route::get('/reports/sales/excel', [SaleController::class, 'salesExcel'])->name('sales.report.excel')->middleware('can:ventas.reportes');
+
+    Route::get('/reports/financial', [FinancialReportController::class, 'index'])->name('reports.financial')->middleware('can:reportes.financieros');
+    Route::get('/reports/financial/excel', [FinancialReportController::class, 'excel'])->name('reports.financial.excel')->middleware('can:reportes.financieros');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

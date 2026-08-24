@@ -50,7 +50,8 @@ class PermissionSeeder extends Seeder
                 'usuarios.eliminar',
                 'empresa.editar',
                 'empresa.tablero',
-                'roles.ver', 'roles.editar'
+                'roles.ver', 'roles.editar',
+                'reportes.financieros',
             ],
             'cajero' => [
                 'ordenes.ver',
@@ -77,6 +78,17 @@ class PermissionSeeder extends Seeder
                 'productos.crear',
                 'productos.editar',
                 'productos.eliminar',
+            ],
+            // Rol de solo lectura para el contador externo: ve ventas, gastos
+            // y el reporte financiero combinado, pero no puede crear, editar
+            // ni eliminar nada del sistema operativo del restaurante.
+            'contador' => [
+                'empresa.tablero',
+                'ventas.ver',
+                'ventas.reportes',
+                'gastos.ver',
+                'gastos.reportes',
+                'reportes.financieros',
             ],
         ];
 
