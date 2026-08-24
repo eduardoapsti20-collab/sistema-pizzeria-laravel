@@ -44,6 +44,9 @@ class SettingController extends Controller
             'nubefact_serie_boleta' => 'nullable|string|max:10',
             'nubefact_serie_factura' => 'nullable|string|max:10',
 
+            'documento_api_proveedor' => 'nullable|string|max:50',
+            'documento_api_token' => 'nullable|string|max:255',
+
         ], [
             'company_name.required' => 'El nombre comercial de la empresa es obligatorio.',
             'company_email.required' => 'El correo electrónico de soporte es requerido.',

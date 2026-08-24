@@ -8,6 +8,7 @@ use App\Models\OrderDetail;
 use App\Models\PaymentMethod;
 use App\Models\Sale;
 use App\Models\Setting;
+use App\Services\DocumentoLookupService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -42,6 +43,8 @@ class OrdersCashierComponent extends Component
     public $clienteNumeroDocumento = '';
     public $clienteDenominacion = '';
     public $clienteDireccion = '';
+    public $buscandoDocumento = false;
+    public $documentoNoEncontrado = false;
 
     public function mount()
     {
@@ -152,6 +155,8 @@ class OrdersCashierComponent extends Component
         $this->clienteNumeroDocumento = '';
         $this->clienteDenominacion = '';
         $this->clienteDireccion = '';
+        $this->buscandoDocumento = false;
+        $this->documentoNoEncontrado = false;
         $this->showPaymentModal = true;
     }
 
@@ -159,6 +164,48 @@ class OrdersCashierComponent extends Component
     {
         $this->tipoComprobante = $tipo;
         $this->clienteTipoDocumento = $tipo === 'factura' ? 'RUC' : 'DNI';
+    }
+
+    /**
+     * Hook automatico de Livewire: se dispara cada vez que cambia
+     * clienteNumeroDocumento (el cajero escribe DNI o RUC).
+     * Si el largo coincide (8 = DNI, 11 = RUC) y el servicio esta
+     * configurado en Ajustes, autocompleta nombre/razon social.
+     * Si falla o no esta configurado, no rompe nada: el cajero sigue
+     * pudiendo escribir el nombre a mano como antes.
+     */
+    public function updatedClienteNumeroDocumento($valor)
+    {
+        $this->documentoNoEncontrado = false;
+
+        $valor = preg_replace('/\D/', '', (string) $valor);
+
+        $largoEsperado = $this->clienteTipoDocumento === 'RUC' ? 11 : 8;
+
+        if (strlen($valor) !== $largoEsperado) {
+            return;
+        }
+
+        $this->buscandoDocumento = true;
+
+        try {
+            $resultado = (new DocumentoLookupService())->buscar($valor);
+        } catch (\Throwable $e) {
+            Log::warning('Cajero: fallo al consultar documento', ['error' => $e->getMessage()]);
+            $resultado = null;
+        }
+
+        $this->buscandoDocumento = false;
+
+        if ($resultado && filled($resultado['denominacion'] ?? null)) {
+            $this->clienteDenominacion = $resultado['denominacion'];
+
+            if (filled($resultado['direccion'] ?? null)) {
+                $this->clienteDireccion = $resultado['direccion'];
+            }
+        } else {
+            $this->documentoNoEncontrado = true;
+        }
     }
 
     public function processPayment()

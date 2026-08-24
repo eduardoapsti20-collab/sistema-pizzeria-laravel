@@ -231,10 +231,20 @@
                                         <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">
                                             {{ $tipoComprobante === 'factura' ? 'RUC (obligatorio)' : 'DNI (opcional)' }}
                                         </label>
-                                        <input type="text" wire:model="clienteNumeroDocumento"
-                                            maxlength="{{ $tipoComprobante === 'factura' ? 11 : 8 }}"
-                                            placeholder="{{ $tipoComprobante === 'factura' ? '20123456789' : '12345678' }}"
-                                            class="w-full bg-slate-50 border-slate-200 rounded-lg py-1.5 px-3 text-sm">
+                                        <div class="relative">
+                                            <input type="text" wire:model.live.debounce.400ms="clienteNumeroDocumento"
+                                                maxlength="{{ $tipoComprobante === 'factura' ? 11 : 8 }}"
+                                                placeholder="{{ $tipoComprobante === 'factura' ? '20123456789' : '12345678' }}"
+                                                class="w-full bg-slate-50 border-slate-200 rounded-lg py-1.5 px-3 text-sm">
+                                            @if ($buscandoDocumento)
+                                                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">
+                                                    <i class="fas fa-circle-notch fa-spin"></i> buscando...
+                                                </span>
+                                            @endif
+                                        </div>
+                                        @if ($documentoNoEncontrado && !$buscandoDocumento)
+                                            <span class="text-[10px] text-amber-500 ml-1">No se encontró, escribe el nombre manualmente.</span>
+                                        @endif
                                         @error('clienteNumeroDocumento')
                                             <span class="text-[10px] text-rose-500 ml-1">{{ $message }}</span>
                                         @enderror
