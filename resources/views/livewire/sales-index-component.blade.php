@@ -112,6 +112,7 @@
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Mesa</th>
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Mesero</th>
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-right">Total</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-center">Comprobante</th>
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-center">Ticket
                             </th>
                         </tr>
@@ -162,6 +163,32 @@
                                 </td>
 
                                 <td class="px-6 py-4 text-center">
+                                    @if (!$sale->requiereSunat())
+                                        <span class="text-[10px] text-slate-400 font-bold uppercase">Nota de venta</span>
+                                    @elseif ($sale->estado_sunat === 'aceptado')
+                                        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                            🟢 Aceptado
+                                        </span>
+                                    @elseif ($sale->estado_sunat === 'error')
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                                🔴 Error
+                                            </span>
+                                            <button wire:click="reintentarEmision({{ $sale->id }})"
+                                                wire:loading.attr="disabled"
+                                                wire:target="reintentarEmision({{ $sale->id }})"
+                                                class="text-[9px] font-black text-orange-600 hover:text-orange-800 uppercase underline disabled:opacity-50">
+                                                Reintentar
+                                            </button>
+                                        </div>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                            🟡 Pendiente
+                                        </span>
+                                    @endif
+                                </td>
+
+                                <td class="px-6 py-4 text-center">
                                     <a href="{{ route('sales.receipt', $sale->id) }}" target="_blank"
                                         class="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white transition-all shadow-sm">
                                         <i class="fas fa-print"></i>
@@ -171,7 +198,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-slate-400">
+                                <td colspan="6" class="px-6 py-12 text-center text-slate-400">
                                     No se encontraron ventas registradas
                                 </td>
                             </tr>
@@ -210,6 +237,28 @@
                             <span>Mesa: {{ $sale->order->table->name ?? 'N/A' }}</span>
                             <span>{{ $sale->order->user->name ?? 'Sistema' }}</span>
                         </div>
+
+                        @if ($sale->requiereSunat())
+                            <div class="flex items-center justify-between">
+                                @if ($sale->estado_sunat === 'aceptado')
+                                    <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        🟢 Aceptado
+                                    </span>
+                                @elseif ($sale->estado_sunat === 'error')
+                                    <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        🔴 Error
+                                    </span>
+                                    <button wire:click="reintentarEmision({{ $sale->id }})"
+                                        class="text-[9px] font-black text-orange-600 uppercase underline">
+                                        Reintentar
+                                    </button>
+                                @else
+                                    <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        🟡 Pendiente
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
 
                         <button wire:click="printTicket({{ $sale->id }})"
                             class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-2">

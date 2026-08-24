@@ -398,11 +398,9 @@ class OrdersCashierComponent extends Component
                 'printer_name' => $this->printer_name
             ]);
 
-            // Fase 3: aqui se despachara un Job en segundo plano para emitir
-            // boleta/factura ante SUNAT via Nubefact, sin bloquear al cajero.
-            // if ($sale->requiereSunat()) {
-            //     EmitirComprobanteJob::dispatch($sale);
-            // }
+            if ($sale->requiereSunat()) {
+                \App\Jobs\EmitirComprobanteJob::dispatch($sale);
+            }
 
             $this->resetPaymentFields();
             $this->reset(['boxId', 'tip']);

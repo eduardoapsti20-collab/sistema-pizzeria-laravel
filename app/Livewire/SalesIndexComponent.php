@@ -35,6 +35,35 @@ class SalesIndexComponent extends Component
         $this->dispatch('print-ticket', saleId: $saleId);
     }
 
+    /**
+     * Reintento manual desde la lista de ventas, para cuando el job
+     * automatico ya agoto sus intentos (estado_sunat = error) o cuando
+     * el usuario no quiere esperar al siguiente ciclo del worker.
+     */
+    public function reintentarEmision($saleId)
+    {
+        $sale = \App\Models\Sale::findOrFail($saleId);
+
+        if (!$sale->requiereSunat()) {
+            $this->dispatch('swal', [
+                'title' => 'No aplica',
+                'text' => 'Esta venta es una nota de venta interna, no se emite ante SUNAT.',
+                'icon' => 'info',
+            ]);
+            return;
+        }
+
+        $sale->update(['estado_sunat' => 'pendiente']);
+
+        \App\Jobs\EmitirComprobanteJob::dispatch($sale);
+
+        $this->dispatch('swal', [
+            'title' => 'Reintento enviado',
+            'text' => 'Se volverá a intentar la emisión en unos segundos.',
+            'icon' => 'success',
+        ]);
+    }
+
     public function render()
     {
         $baseQuery = Sale::with(['order.table', 'details.product', 'order.user'])
