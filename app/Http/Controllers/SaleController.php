@@ -21,7 +21,11 @@ class SaleController extends Controller
 {
     $sale = Sale::with('details.product', 'details.productSize', 'order.table', 'order.user')->findOrFail($id);
 
-    $qrCodeBase64 = (new QRCode())->render('Venta: ' . $sale->sale_code);
+    $contenidoQr = $sale->requiereSunat() && $sale->enlace_pdf
+        ? $sale->enlace_pdf
+        : 'Venta: ' . $sale->sale_code;
+
+    $qrCodeBase64 = (new QRCode())->render($contenidoQr);
 
     $empresa = \App\Models\Setting::first();
     $logoBase64 = null;

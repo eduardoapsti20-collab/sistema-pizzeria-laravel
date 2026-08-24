@@ -38,6 +38,30 @@
             margin: 6px 0;
         }
 
+        /* ===== TIPO DE COMPROBANTE ===== */
+        .comprobante-box {
+            text-align: center;
+            margin: 8px 0;
+            padding: 5px 0;
+            border: 1px solid #1a1a1a;
+        }
+        .comprobante-tipo {
+            font-size: 9.5pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .comprobante-numero {
+            font-size: 9pt;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+        .comprobante-doc {
+            font-size: 7.5pt;
+            color: #555;
+            margin-top: 2px;
+        }
+
         /* ===== METADATOS (ticket, fecha, mesa, mesero, cliente) ===== */
         .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
         .meta-table td {
@@ -159,6 +183,23 @@
 
     <div class="divider-solid"></div>
 
+    @php
+        $etiquetasComprobante = [
+            'boleta' => 'Boleta de Venta Electrónica',
+            'factura' => 'Factura Electrónica',
+            'nota_venta' => 'Nota de Venta',
+        ];
+        $etiquetaComprobante = $etiquetasComprobante[$sale->tipo_comprobante] ?? 'Nota de Venta';
+        $etiquetaDocCliente = $sale->cliente_tipo_documento === 'RUC' ? 'RUC' : 'DNI';
+    @endphp
+
+    <div class="comprobante-box">
+        <div class="comprobante-tipo">{{ $etiquetaComprobante }}</div>
+        @if ($sale->requiereSunat())
+            <div class="comprobante-numero">{{ $sale->numero_completo ?? 'Pendiente de asignar' }}</div>
+        @endif
+    </div>
+
     <table class="meta-table">
         <tr>
             <td class="meta-label">Ticket</td>
@@ -172,10 +213,29 @@
             <td class="meta-label text-right">Mesero</td>
             <td class="meta-value text-right">{{ $sale->order->user->name ?? 'Sistema' }}</td>
         </tr>
-        <tr>
-            <td class="meta-label">Cliente</td>
-            <td class="meta-value" colspan="3">{{ strtoupper($sale->customer_name ?? 'Consumidor Final') }}</td>
-        </tr>
+        @if ($sale->requiereSunat())
+            <tr>
+                <td class="meta-label">Cliente</td>
+                <td class="meta-value" colspan="3">{{ strtoupper($sale->cliente_denominacion ?: 'Cliente Varios') }}</td>
+            </tr>
+            @if ($sale->cliente_numero_documento)
+                <tr>
+                    <td class="meta-label">{{ $etiquetaDocCliente }}</td>
+                    <td class="meta-value" colspan="3">{{ $sale->cliente_numero_documento }}</td>
+                </tr>
+            @endif
+            @if ($sale->cliente_direccion)
+                <tr>
+                    <td class="meta-label">Dirección</td>
+                    <td class="meta-value" colspan="3">{{ $sale->cliente_direccion }}</td>
+                </tr>
+            @endif
+        @else
+            <tr>
+                <td class="meta-label">Cliente</td>
+                <td class="meta-value" colspan="3">{{ strtoupper($sale->customer_name ?? 'Consumidor Final') }}</td>
+            </tr>
+        @endif
     </table>
 
     <div class="section-title">Detalle del pedido</div>
@@ -237,7 +297,18 @@
 
     <div class="qr-section">
         <img src="{{ $qrCodeBase64 }}" alt="QR Code">
-        <p class="footer-msg">¡Gracias por su preferencia!<br>Escanea para ver tu factura online</p>
+        <p class="footer-msg">
+            ¡Gracias por su preferencia!
+            @if ($sale->requiereSunat())
+                @if ($sale->enlace_pdf)
+                    <br>Escanea para ver tu {{ $sale->tipo_comprobante === 'factura' ? 'factura' : 'boleta' }} electrónica
+                @elseif ($sale->estado_sunat === 'error')
+                    <br><strong>Comprobante aún no enviado a SUNAT — reintentar desde el sistema</strong>
+                @else
+                    <br>Tu {{ $sale->tipo_comprobante === 'factura' ? 'factura' : 'boleta' }} electrónica se está procesando
+                @endif
+            @endif
+        </p>
     </div>
 
 </body>
