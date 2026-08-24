@@ -28,6 +28,9 @@ class Setting extends Model
         'nubefact_ambiente',
         'nubefact_serie_boleta',
         'nubefact_serie_factura',
+
+        'documento_api_proveedor',
+        'documento_api_token',
     ];
 
     protected $casts = [
