@@ -19,10 +19,8 @@ WORKDIR /var/www/html
 COPY . .
 COPY --from=assets /app/public/build ./public/build
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
-
-RUN php artisan config:clear
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 EXPOSE 8080
 
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
+CMD php artisan package:discover --ansi && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
