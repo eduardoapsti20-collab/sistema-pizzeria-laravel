@@ -111,6 +111,7 @@
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Venta / Fecha</th>
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Mesa</th>
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Mesero</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Cliente</th>
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-right">Total</th>
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-center">Comprobante</th>
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-center">Ticket
@@ -146,6 +147,21 @@
                                     </span>
                                 </td>
 
+                                <td class="px-6 py-4">
+                                    @if ($sale->cliente_denominacion)
+                                        <div class="flex flex-col">
+                                            <span class="text-xs font-bold text-slate-700">
+                                                {{ Str::limit($sale->cliente_denominacion, 24) }}
+                                            </span>
+                                            <span class="text-[10px] text-slate-400 font-semibold">
+                                                {{ $sale->cliente_tipo_documento }}: {{ $sale->cliente_numero_documento ?: '-' }}
+                                            </span>
+                                        </div>
+                                    @else
+                                        <span class="text-[10px] text-slate-400 uppercase font-bold">Consumidor final</span>
+                                    @endif
+                                </td>
+
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex flex-col items-end leading-tight">
                                         <span class="text-sm font-black text-slate-900">
@@ -166,7 +182,16 @@
                                 <td class="px-6 py-4 text-center">
                                     @if (!$sale->requiereSunat())
                                         <span class="text-[10px] text-slate-400 font-bold uppercase">Nota de venta</span>
-                                    @elseif ($sale->estado_sunat === 'aceptado')
+                                    @else
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wide">
+                                                {{ $sale->tipo_comprobante === 'factura' ? 'Factura' : ($sale->tipo_comprobante === 'nota_credito' ? 'N. Crédito' : 'Boleta') }}
+                                                @if ($sale->numero_completo)
+                                                    <span class="text-slate-400 font-bold normal-case">{{ $sale->numero_completo }}</span>
+                                                @endif
+                                            </span>
+
+                                            @if ($sale->estado_sunat === 'aceptado')
                                         <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
                                             🟢 Aceptado
                                         </span>
@@ -194,6 +219,8 @@
                                         <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
                                             🟡 Pendiente
                                         </span>
+                                    @endif
+                                        </div>
                                     @endif
                                 </td>
 
@@ -235,7 +262,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                                <td colspan="8" class="px-6 py-12 text-center text-slate-400">
                                     No se encontraron ventas registradas
                                 </td>
                             </tr>
@@ -276,6 +303,18 @@
                         </div>
 
                         @if ($sale->requiereSunat())
+                            <div class="flex items-center justify-between text-[10px]">
+                                <span class="font-black text-slate-500 uppercase">
+                                    {{ $sale->tipo_comprobante === 'factura' ? 'Factura' : ($sale->tipo_comprobante === 'nota_credito' ? 'N. Crédito' : 'Boleta') }}
+                                    {{ $sale->numero_completo }}
+                                </span>
+                                @if ($sale->cliente_denominacion)
+                                    <span class="text-slate-400 font-semibold">
+                                        {{ Str::limit($sale->cliente_denominacion, 18) }}
+                                    </span>
+                                @endif
+                            </div>
+
                             <div class="flex items-center justify-between">
                                 @if ($sale->estado_sunat === 'aceptado')
                                     <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
