@@ -97,6 +97,32 @@ class SalesIndexComponent extends Component
     }
 
     /**
+     * Refresca el estado real ante SUNAT sin cerrar el modal de detalle,
+     * para que el usuario vea el cambio en el momento.
+     */
+    public function consultarEstadoModal()
+    {
+        $sale = \App\Models\Sale::findOrFail($this->modalSaleId);
+
+        try {
+            app(\App\Services\NubefactService::class)->consultarEstado($sale);
+        } catch (\Throwable $e) {
+            $this->dispatch('swal', [
+                'title' => 'No se pudo consultar',
+                'text' => $e->getMessage(),
+                'icon' => 'error',
+            ]);
+            return;
+        }
+
+        $this->dispatch('swal', [
+            'title' => 'Actualizado',
+            'text' => 'Se refrescó el estado del comprobante.',
+            'icon' => 'success',
+        ]);
+    }
+
+    /**
      * Reintento manual desde la lista de ventas, para cuando el job
      * automatico ya agoto sus intentos (estado_sunat = error) o cuando
      * el usuario no quiere esperar al siguiente ciclo del worker.

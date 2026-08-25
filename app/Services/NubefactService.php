@@ -92,6 +92,48 @@ class NubefactService
     }
 
     /**
+     * Consulta ante Nubefact el estado actual de un comprobante ya emitido
+     * (util para refrescar manualmente, por ejemplo cuando quedo "pendiente"
+     * y el cliente quiere saber si SUNAT ya lo acepto).
+     */
+    public function consultarEstado(Sale $sale): Sale
+    {
+        if (!$sale->requiereSunat() || !$sale->comprobante_serie || !$sale->comprobante_numero) {
+            return $sale;
+        }
+
+        if (!$this->estaConfigurado()) {
+            return $sale;
+        }
+
+        $payload = [
+            'operacion' => 'consultar_comprobante',
+            'tipo_de_comprobante' => $sale->tipo_comprobante === 'factura' ? 1 : 2,
+            'serie' => $sale->comprobante_serie,
+            'numero' => $sale->comprobante_numero,
+        ];
+
+        $data = $this->enviarAOperacion($payload);
+
+        if ($data === null || isset($data['errors'])) {
+            Log::warning('Nubefact: no se pudo consultar estado', ['sale_id' => $sale->id, 'respuesta' => $data]);
+            return $sale;
+        }
+
+        $sale->update([
+            'estado_sunat' => ($data['aceptada_por_sunat'] ?? false) ? 'aceptado' : 'pendiente',
+            'enlace_pdf' => $data['enlace_del_pdf'] ?? $sale->enlace_pdf,
+            'enlace_xml' => $data['enlace_del_xml'] ?? $sale->enlace_xml,
+            'enlace_cdr' => $data['enlace_del_cdr'] ?? $sale->enlace_cdr,
+            'hash_sunat' => $data['codigo_hash'] ?? $sale->hash_sunat,
+            'sunat_mensaje' => $data['sunat_description'] ?? $data['sunat_note'] ?? $sale->sunat_mensaje,
+            'sunat_respuesta' => $data,
+        ]);
+
+        return $sale;
+    }
+
+    /**
      * Pide a Nubefact la anulacion (comunicacion de baja) de un comprobante ya
      * aceptado por SUNAT. No borra nada localmente: SUNAT procesa la baja en
      * su siguiente resumen diario, por eso el estado queda "anulacion_solicitada"

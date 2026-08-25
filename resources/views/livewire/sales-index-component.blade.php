@@ -234,10 +234,10 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center justify-center gap-1.5">
                                         @if ($sale->requiereSunat())
-                                            <a href="{{ $sale->enlace_nubefact }}" target="_blank" title="Ver en NubeFacT"
+                                            <button wire:click="abrirModal({{ $sale->id }}, 'detalle')" title="Ver detalle y estado"
                                                 class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
-                                                <i class="fas fa-arrow-up-right-from-square text-xs"></i>
-                                            </a>
+                                                <i class="fas fa-circle-info text-xs"></i>
+                                            </button>
                                         @endif
                                         @if ($sale->enlace_pdf)
                                             <a href="{{ $sale->enlace_pdf }}" target="_blank" title="Descargar PDF"
@@ -355,10 +355,10 @@
                             </div>
 
                             <div class="flex items-center gap-2 pt-1 flex-wrap">
-                                <a href="{{ $sale->enlace_nubefact }}" target="_blank"
+                                <button wire:click="abrirModal({{ $sale->id }}, 'detalle')"
                                     class="flex-1 text-center bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
-                                    <i class="fas fa-arrow-up-right-from-square"></i> NubeFacT
-                                </a>
+                                    <i class="fas fa-circle-info"></i> Detalle
+                                </button>
                                 @if ($sale->enlace_pdf)
                                     <a href="{{ $sale->enlace_pdf }}" target="_blank"
                                         class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
@@ -420,6 +420,65 @@
                     <i class="fas fa-envelope text-orange-500"></i> Enviar comprobante por correo
                 </h3>
                 <p class="text-slate-500 text-sm mb-5">Se enviará el enlace del PDF al correo indicado.</p>
+            @elseif ($modalAccion === 'detalle')
+                @php($detalleSale = \App\Models\Sale::find($modalSaleId))
+                <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                    <i class="fas fa-circle-info text-blue-500"></i> Detalle del comprobante
+                </h3>
+
+                @if ($detalleSale)
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 text-xs uppercase font-bold">Estado</span>
+                            @if ($detalleSale->estado_sunat === 'aceptado')
+                                <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">🟢 Aceptado</span>
+                            @elseif ($detalleSale->estado_sunat === 'error')
+                                <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">🔴 Error</span>
+                            @else
+                                <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">🟡 Pendiente</span>
+                            @endif
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 text-xs uppercase font-bold">Comprobante</span>
+                            <span class="font-bold text-slate-700">
+                                {{ $detalleSale->tipo_comprobante === 'factura' ? 'Factura' : 'Boleta' }}
+                                {{ $detalleSale->numero_completo ?? '(sin asignar aún)' }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 text-xs uppercase font-bold">Cliente</span>
+                            <span class="font-bold text-slate-700 text-right">{{ $detalleSale->cliente_denominacion ?? 'Consumidor final' }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 text-xs uppercase font-bold">Total</span>
+                            <span class="font-bold text-slate-700">S/ {{ number_format($detalleSale->total, 2) }}</span>
+                        </div>
+
+                        @if ($detalleSale->sunat_mensaje)
+                            <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-600">
+                                {{ $detalleSale->sunat_mensaje }}
+                            </div>
+                        @endif
+
+                        <div class="flex gap-2 pt-2">
+                            @if ($detalleSale->enlace_pdf)
+                                <a href="{{ $detalleSale->enlace_pdf }}" target="_blank"
+                                    class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-2 rounded-lg text-[10px] font-black uppercase">
+                                    <i class="fas fa-file-pdf"></i> PDF
+                                </a>
+                            @endif
+                            @if ($detalleSale->enlace_xml)
+                                <a href="{{ $detalleSale->enlace_xml }}" target="_blank"
+                                    class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-2 rounded-lg text-[10px] font-black uppercase">
+                                    <i class="fas fa-file-code"></i> XML
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                @endif
             @endif
 
             @if (in_array($modalAccion, ['anular', 'nota_credito']))
@@ -439,13 +498,22 @@
             <div class="flex gap-3 mt-6">
                 <button type="button" x-on:click="$dispatch('close-modal', 'comprobante-accion')"
                     class="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl text-xs uppercase tracking-widest">
-                    Cancelar
+                    {{ $modalAccion === 'detalle' ? 'Cerrar' : 'Cancelar' }}
                 </button>
-                <button wire:click="confirmarModal" wire:loading.attr="disabled" wire:target="confirmarModal"
-                    class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-widest disabled:opacity-50">
-                    <span wire:loading.remove wire:target="confirmarModal">Confirmar</span>
-                    <span wire:loading wire:target="confirmarModal">Enviando...</span>
-                </button>
+
+                @if ($modalAccion === 'detalle')
+                    <button wire:click="consultarEstadoModal" wire:loading.attr="disabled" wire:target="consultarEstadoModal"
+                        class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-widest disabled:opacity-50">
+                        <span wire:loading.remove wire:target="consultarEstadoModal">Consultar estado</span>
+                        <span wire:loading wire:target="consultarEstadoModal">Consultando...</span>
+                    </button>
+                @else
+                    <button wire:click="confirmarModal" wire:loading.attr="disabled" wire:target="confirmarModal"
+                        class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-widest disabled:opacity-50">
+                        <span wire:loading.remove wire:target="confirmarModal">Confirmar</span>
+                        <span wire:loading wire:target="confirmarModal">Enviando...</span>
+                    </button>
+                @endif
             </div>
         </div>
     </x-modal>
