@@ -233,6 +233,12 @@
 
                                 <td class="px-6 py-4">
                                     <div class="flex items-center justify-center gap-1.5">
+                                        @if ($sale->requiereSunat())
+                                            <a href="{{ $sale->enlace_nubefact }}" target="_blank" title="Ver en NubeFacT"
+                                                class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                                                <i class="fas fa-arrow-up-right-from-square text-xs"></i>
+                                            </a>
+                                        @endif
                                         @if ($sale->enlace_pdf)
                                             <a href="{{ $sale->enlace_pdf }}" target="_blank" title="Descargar PDF"
                                                 class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-600 transition-colors">
@@ -253,7 +259,7 @@
                                                 <i class="fas fa-ban text-xs"></i>
                                             </button>
                                         @endif
-                                        @if (!$sale->requiereSunat() && !$sale->enlace_pdf && !$sale->puedeAnularse())
+                                        @if (!$sale->requiereSunat())
                                             <span class="text-[10px] text-slate-300">—</span>
                                         @endif
                                     </div>
@@ -343,30 +349,32 @@
                                 @endif
                             </div>
 
-                            @if ($sale->enlace_pdf || $sale->puedeAnularse())
-                                <div class="flex items-center gap-2 pt-1">
-                                    @if ($sale->enlace_pdf)
-                                        <a href="{{ $sale->enlace_pdf }}" target="_blank"
-                                            class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
-                                            <i class="fas fa-file-pdf"></i> PDF
-                                        </a>
-                                        <button wire:click="abrirModal({{ $sale->id }}, 'correo')"
-                                            class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
-                                            <i class="fas fa-envelope"></i> Correo
-                                        </button>
-                                    @endif
-                                    @if ($sale->puedeAnularse())
-                                        <button wire:click="abrirModal({{ $sale->id }}, 'nota_credito')"
-                                            class="flex-1 text-center bg-sky-50 text-sky-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
-                                            N. Crédito
-                                        </button>
-                                        <button wire:click="abrirModal({{ $sale->id }}, 'anular')"
-                                            class="flex-1 text-center bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
-                                            Anular
-                                        </button>
-                                    @endif
-                                </div>
-                            @endif
+                            <div class="flex items-center gap-2 pt-1 flex-wrap">
+                                <a href="{{ $sale->enlace_nubefact }}" target="_blank"
+                                    class="flex-1 text-center bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                    <i class="fas fa-arrow-up-right-from-square"></i> NubeFacT
+                                </a>
+                                @if ($sale->enlace_pdf)
+                                    <a href="{{ $sale->enlace_pdf }}" target="_blank"
+                                        class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                        <i class="fas fa-file-pdf"></i> PDF
+                                    </a>
+                                    <button wire:click="abrirModal({{ $sale->id }}, 'correo')"
+                                        class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                        <i class="fas fa-envelope"></i> Correo
+                                    </button>
+                                @endif
+                                @if ($sale->puedeAnularse())
+                                    <button wire:click="abrirModal({{ $sale->id }}, 'nota_credito')"
+                                        class="flex-1 text-center bg-sky-50 text-sky-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                        N. Crédito
+                                    </button>
+                                    <button wire:click="abrirModal({{ $sale->id }}, 'anular')"
+                                        class="flex-1 text-center bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                        Anular
+                                    </button>
+                                @endif
+                            </div>
                         @endif
 
                         <button wire:click="printTicket({{ $sale->id }})"

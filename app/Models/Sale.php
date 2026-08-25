@@ -112,6 +112,33 @@ class Sale extends Model
             && $this->comprobanteAceptado();
     }
 
+    /**
+     * Enlace directo al panel de Comprobantes de Nubefact, filtrado por el
+     * dia en que se emitio esta venta. Util cuando el PDF/XML aun no estan
+     * listos en nuestro sistema (estado pendiente) y se quiere revisar el
+     * estado real directamente en Nubefact.
+     */
+    public function getEnlaceNubefactAttribute(): ?string
+    {
+        if (!$this->requiereSunat()) {
+            return null;
+        }
+
+        $fecha = $this->created_at ?? now();
+
+        $params = [
+            'beginning_date[beginning_date(3i)]' => $fecha->format('d'),
+            'beginning_date[beginning_date(2i)]' => $fecha->format('m'),
+            'beginning_date[beginning_date(1i)]' => $fecha->format('Y'),
+            'end_date[end_date(3i)]' => $fecha->format('d'),
+            'end_date[end_date(2i)]' => $fecha->format('m'),
+            'end_date[end_date(1i)]' => $fecha->format('Y'),
+            'commit' => 'Filtrar',
+        ];
+
+        return 'https://www.nubefact.com/invoices?' . http_build_query($params);
+    }
+
     public function esNotaCredito(): bool
     {
         return $this->tipo_comprobante === 'nota_credito';
