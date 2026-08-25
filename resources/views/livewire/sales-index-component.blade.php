@@ -248,6 +248,11 @@
                                                 class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-600 transition-colors">
                                                 <i class="fas fa-envelope text-xs"></i>
                                             </button>
+                                            <a href="https://wa.me/?text={{ urlencode('Hola, aquí tienes tu comprobante: ' . $sale->enlace_pdf) }}"
+                                                target="_blank" title="Enviar por WhatsApp"
+                                                class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600 transition-colors">
+                                                <i class="fab fa-whatsapp text-xs"></i>
+                                            </a>
                                         @endif
                                         @if ($sale->puedeAnularse())
                                             <button wire:click="abrirModal({{ $sale->id }}, 'nota_credito')" title="Generar nota de crédito"
@@ -363,6 +368,11 @@
                                         class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
                                         <i class="fas fa-envelope"></i> Correo
                                     </button>
+                                    <a href="https://wa.me/?text={{ urlencode('Hola, aquí tienes tu comprobante: ' . $sale->enlace_pdf) }}"
+                                        target="_blank"
+                                        class="flex-1 text-center bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                    </a>
                                 @endif
                                 @if ($sale->puedeAnularse())
                                     <button wire:click="abrirModal({{ $sale->id }}, 'nota_credito')"
