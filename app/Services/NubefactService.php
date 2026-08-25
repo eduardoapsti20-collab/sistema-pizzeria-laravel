@@ -51,28 +51,19 @@ class NubefactService
 
         $payload = $this->construirPayload($sale);
 
-        try {
-            $response = Http::timeout(30)
-                ->withToken($this->settings->nubefact_token)
-                ->acceptJson()
-                ->post($this->settings->nubefact_ruta, $payload);
-        } catch (\Throwable $e) {
-            Log::error('Nubefact: fallo de conexion', ['sale_id' => $sale->id, 'error' => $e->getMessage()]);
+        $data = $this->enviarAOperacion($payload);
 
+        if ($data === null) {
             $sale->update([
                 'estado_sunat' => 'error',
-                'sunat_mensaje' => 'No se pudo conectar con Nubefact: ' . $e->getMessage(),
+                'sunat_mensaje' => 'No se pudo conectar con Nubefact.',
             ]);
 
             return $sale;
         }
 
-        $data = $response->json() ?? [];
-
-        // Nubefact responde 200 incluso ante algunos errores de validacion,
-        // por eso revisamos el contenido y no solo el status HTTP.
-        if (!$response->successful() || isset($data['errors'])) {
-            $mensaje = $data['errors'] ?? ('Error HTTP ' . $response->status());
+        if (isset($data['errors'])) {
+            $mensaje = $data['errors'];
 
             Log::warning('Nubefact: rechazo o error', ['sale_id' => $sale->id, 'respuesta' => $data]);
 
@@ -98,6 +89,175 @@ class NubefactService
         ]);
 
         return $sale;
+    }
+
+    /**
+     * Pide a Nubefact la anulacion (comunicacion de baja) de un comprobante ya
+     * aceptado por SUNAT. No borra nada localmente: SUNAT procesa la baja en
+     * su siguiente resumen diario, por eso el estado queda "anulacion_solicitada"
+     * hasta confirmar. Para facturas, en la practica casi siempre conviene usar
+     * una Nota de Credito en vez de esto (ver notaCredito()).
+     *
+     * IMPORTANTE: verifica el nombre exacto de los campos contra el manual JSON
+     * vigente de tu cuenta Nubefact (Ajustes > Api Integracion en su panel)
+     * antes de usar esto en produccion; esta es la estructura documentada
+     * públicamente para la operacion "generar_anulacion".
+     */
+    public function anular(Sale $sale, string $motivo): Sale
+    {
+        if (!$sale->puedeAnularse()) {
+            throw new RuntimeException('Esta venta no se puede anular (no es un comprobante aceptado por SUNAT, o ya fue anulada).');
+        }
+
+        $payload = [
+            'operacion' => 'generar_anulacion',
+            'tipo_de_comprobante' => $sale->tipo_comprobante === 'factura' ? 1 : 2,
+            'serie' => $sale->comprobante_serie,
+            'numero' => $sale->comprobante_numero,
+            'motivo' => $motivo,
+        ];
+
+        $data = $this->enviarAOperacion($payload);
+
+        if ($data === null || isset($data['errors'])) {
+            $mensaje = $data['errors'] ?? 'No se pudo conectar con Nubefact.';
+
+            Log::warning('Nubefact: error al anular', ['sale_id' => $sale->id, 'respuesta' => $data]);
+
+            $sale->update([
+                'sunat_mensaje' => is_string($mensaje) ? $mensaje : json_encode($mensaje),
+                'sunat_respuesta' => $data,
+            ]);
+
+            throw new RuntimeException('Nubefact rechazo la solicitud de anulacion: ' . (is_string($mensaje) ? $mensaje : json_encode($mensaje)));
+        }
+
+        $sale->update([
+            'estado_sunat' => 'anulacion_solicitada',
+            'motivo_anulacion' => $motivo,
+            'ticket_anulacion' => $data['ticket'] ?? null,
+            'sunat_respuesta' => $data,
+        ]);
+
+        return $sale;
+    }
+
+    /**
+     * Genera una Nota de Credito que referencia a un comprobante ya aceptado.
+     * Crea una nueva fila en 'sales' (tipo_comprobante = nota_credito) ligada
+     * a la venta original via comprobante_referencia_id, y la envia a Nubefact.
+     *
+     * $tipoMotivo es el codigo de motivo SUNAT para notas de credito, los mas comunes:
+     * 1 = Anulacion de la operacion, 2 = Anulacion por error en el RUC,
+     * 3 = Correccion por error en la descripcion, 4 = Descuento global,
+     * 5 = Descuento por item, 6 = Devolucion total, 7 = Devolucion por item.
+     * Verifica esta tabla contra el manual vigente de Nubefact.
+     */
+    public function notaCredito(Sale $original, string $motivo, int $tipoMotivo = 6): Sale
+    {
+        if (!$original->puedeAnularse()) {
+            throw new RuntimeException('Solo se puede generar una nota de credito sobre un comprobante ya aceptado por SUNAT.');
+        }
+
+        $original->loadMissing('details.product');
+
+        $nota = Sale::create([
+            'order_id' => $original->order_id,
+            'cash_register_id' => $original->cash_register_id,
+            'subtotal' => $original->subtotal,
+            'tax' => $original->tax,
+            'tip' => 0,
+            'total' => $original->total,
+            'paid_amount' => 0,
+            'change' => 0,
+            'paid_at' => now(),
+            'tipo_comprobante' => 'nota_credito',
+            'cliente_tipo_documento' => $original->cliente_tipo_documento,
+            'cliente_numero_documento' => $original->cliente_numero_documento,
+            'cliente_denominacion' => $original->cliente_denominacion,
+            'cliente_direccion' => $original->cliente_direccion,
+            'cliente_email' => $original->cliente_email,
+            'comprobante_referencia_id' => $original->id,
+            'motivo_anulacion' => $motivo,
+            'estado_sunat' => 'pendiente',
+        ]);
+
+        foreach ($original->details as $detalle) {
+            $nota->details()->create($detalle->only([
+                'product_id', 'product_size_id', 'quantity', 'price', 'tax', 'subtotal', 'notes',
+            ]));
+        }
+
+        $nota->load('details.product');
+
+        $esFacturaOriginal = $original->tipo_comprobante === 'factura';
+
+        $payload = $this->construirPayload($nota->fresh('details.product'));
+        $payload['operacion'] = 'generar_comprobante';
+        $payload['tipo_de_comprobante'] = 3; // Nota de Credito
+        $payload['serie'] = $esFacturaOriginal ? 'FC01' : 'BC01'; // series de notas de credito, confirmar en tu cuenta
+        $payload['numero'] = $this->siguienteNumero('nota_credito');
+        $payload['sunat_transaction'] = 1;
+        $payload['tipo_de_nota_de_credito'] = $tipoMotivo;
+        $payload['documento_que_se_modifica_tipo'] = $esFacturaOriginal ? 1 : 2;
+        $payload['documento_que_se_modifica_serie'] = $original->comprobante_serie;
+        $payload['documento_que_se_modifica_numero'] = $original->comprobante_numero;
+        $payload['motivo_de_nota_de_credito'] = $motivo;
+
+        $data = $this->enviarAOperacion($payload);
+
+        if ($data === null || isset($data['errors'])) {
+            $mensaje = $data['errors'] ?? 'No se pudo conectar con Nubefact.';
+
+            $nota->update([
+                'estado_sunat' => 'error',
+                'sunat_mensaje' => is_string($mensaje) ? $mensaje : json_encode($mensaje),
+                'sunat_respuesta' => $data,
+            ]);
+
+            return $nota;
+        }
+
+        $nota->update([
+            'estado_sunat' => ($data['aceptada_por_sunat'] ?? false) ? 'aceptado' : 'pendiente',
+            'comprobante_serie' => $data['serie'] ?? $payload['serie'],
+            'comprobante_numero' => $data['numero'] ?? $payload['numero'],
+            'enlace_pdf' => $data['enlace_del_pdf'] ?? null,
+            'enlace_xml' => $data['enlace_del_xml'] ?? null,
+            'enlace_cdr' => $data['enlace_del_cdr'] ?? null,
+            'hash_sunat' => $data['codigo_hash'] ?? null,
+            'sunat_mensaje' => $data['sunat_description'] ?? $data['sunat_note'] ?? null,
+            'sunat_respuesta' => $data,
+        ]);
+
+        // Si la nota de credito fue aceptada, marcamos el comprobante original como anulado
+        if ($nota->estado_sunat === 'aceptado') {
+            $original->update([
+                'estado_sunat' => 'anulado',
+                'motivo_anulacion' => $motivo,
+            ]);
+        }
+
+        return $nota;
+    }
+
+    /**
+     * POST generico contra la ruta de Nubefact. Devuelve el JSON decodificado,
+     * o null si hubo un problema de conexion (timeout, DNS, etc).
+     */
+    protected function enviarAOperacion(array $payload): ?array
+    {
+        try {
+            $response = Http::timeout(30)
+                ->withToken($this->settings->nubefact_token)
+                ->acceptJson()
+                ->post($this->settings->nubefact_ruta, $payload);
+        } catch (\Throwable $e) {
+            Log::error('Nubefact: fallo de conexion', ['operacion' => $payload['operacion'] ?? null, 'error' => $e->getMessage()]);
+            return null;
+        }
+
+        return $response->json();
     }
 
     /**

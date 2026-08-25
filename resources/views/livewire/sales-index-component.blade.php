@@ -115,6 +115,7 @@
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-center">Comprobante</th>
                             <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-center">Ticket
                             </th>
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-center">Acciones</th>
                         </tr>
                     </thead>
 
@@ -169,6 +170,14 @@
                                         <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
                                             🟢 Aceptado
                                         </span>
+                                    @elseif ($sale->estado_sunat === 'anulado')
+                                        <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                            ⚪ Anulado
+                                        </span>
+                                    @elseif ($sale->estado_sunat === 'anulacion_solicitada')
+                                        <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                            🔵 Anulación en proceso
+                                        </span>
                                     @elseif ($sale->estado_sunat === 'error')
                                         <div class="flex flex-col items-center gap-1">
                                             <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
@@ -195,10 +204,38 @@
                                     </a>
                                 </td>
 
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        @if ($sale->enlace_pdf)
+                                            <a href="{{ $sale->enlace_pdf }}" target="_blank" title="Descargar PDF"
+                                                class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-600 transition-colors">
+                                                <i class="fas fa-file-pdf text-xs"></i>
+                                            </a>
+                                            <button wire:click="abrirModal({{ $sale->id }}, 'correo')" title="Enviar por correo"
+                                                class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-600 transition-colors">
+                                                <i class="fas fa-envelope text-xs"></i>
+                                            </button>
+                                        @endif
+                                        @if ($sale->puedeAnularse())
+                                            <button wire:click="abrirModal({{ $sale->id }}, 'nota_credito')" title="Generar nota de crédito"
+                                                class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                                                <i class="fas fa-file-invoice text-xs"></i>
+                                            </button>
+                                            <button wire:click="abrirModal({{ $sale->id }}, 'anular')" title="Anular"
+                                                class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-600 transition-colors">
+                                                <i class="fas fa-ban text-xs"></i>
+                                            </button>
+                                        @endif
+                                        @if (!$sale->requiereSunat() && !$sale->enlace_pdf && !$sale->puedeAnularse())
+                                            <span class="text-[10px] text-slate-300">—</span>
+                                        @endif
+                                    </div>
+                                </td>
+
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                                <td colspan="7" class="px-6 py-12 text-center text-slate-400">
                                     No se encontraron ventas registradas
                                 </td>
                             </tr>
@@ -244,6 +281,14 @@
                                     <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
                                         🟢 Aceptado
                                     </span>
+                                @elseif ($sale->estado_sunat === 'anulado')
+                                    <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        ⚪ Anulado
+                                    </span>
+                                @elseif ($sale->estado_sunat === 'anulacion_solicitada')
+                                    <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        🔵 En proceso
+                                    </span>
                                 @elseif ($sale->estado_sunat === 'error')
                                     <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
                                         🔴 Error
@@ -258,6 +303,31 @@
                                     </span>
                                 @endif
                             </div>
+
+                            @if ($sale->enlace_pdf || $sale->puedeAnularse())
+                                <div class="flex items-center gap-2 pt-1">
+                                    @if ($sale->enlace_pdf)
+                                        <a href="{{ $sale->enlace_pdf }}" target="_blank"
+                                            class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                            <i class="fas fa-file-pdf"></i> PDF
+                                        </a>
+                                        <button wire:click="abrirModal({{ $sale->id }}, 'correo')"
+                                            class="flex-1 text-center bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                            <i class="fas fa-envelope"></i> Correo
+                                        </button>
+                                    @endif
+                                    @if ($sale->puedeAnularse())
+                                        <button wire:click="abrirModal({{ $sale->id }}, 'nota_credito')"
+                                            class="flex-1 text-center bg-sky-50 text-sky-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                            N. Crédito
+                                        </button>
+                                        <button wire:click="abrirModal({{ $sale->id }}, 'anular')"
+                                            class="flex-1 text-center bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">
+                                            Anular
+                                        </button>
+                                    @endif
+                                </div>
+                            @endif
                         @endif
 
                         <button wire:click="printTicket({{ $sale->id }})"
@@ -275,4 +345,51 @@
 
         </div>
     </div>
+
+    <x-modal name="comprobante-accion" maxWidth="md">
+        <div class="p-6 md:p-8">
+            @if ($modalAccion === 'anular')
+                <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                    <i class="fas fa-ban text-rose-500"></i> Anular comprobante
+                </h3>
+                <p class="text-slate-500 text-sm mb-5">Se enviará una comunicación de baja a SUNAT. Explica brevemente el motivo.</p>
+            @elseif ($modalAccion === 'nota_credito')
+                <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                    <i class="fas fa-file-invoice text-sky-500"></i> Generar nota de crédito
+                </h3>
+                <p class="text-slate-500 text-sm mb-5">Se creará un nuevo comprobante (nota de crédito) referenciando a este. Explica el motivo (devolución, error, etc).</p>
+            @elseif ($modalAccion === 'correo')
+                <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                    <i class="fas fa-envelope text-orange-500"></i> Enviar comprobante por correo
+                </h3>
+                <p class="text-slate-500 text-sm mb-5">Se enviará el enlace del PDF al correo indicado.</p>
+            @endif
+
+            @if (in_array($modalAccion, ['anular', 'nota_credito']))
+                <textarea wire:model="modalMotivo" rows="3" placeholder="Motivo..."
+                    class="w-full rounded-xl border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-sm"></textarea>
+                @error('modalMotivo')
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ $message }}</p>
+                @enderror
+            @elseif ($modalAccion === 'correo')
+                <input type="email" wire:model="modalEmail" placeholder="correo@ejemplo.com"
+                    class="w-full rounded-xl border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-sm">
+                @error('modalEmail')
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ $message }}</p>
+                @enderror
+            @endif
+
+            <div class="flex gap-3 mt-6">
+                <button type="button" x-on:click="$dispatch('close-modal', 'comprobante-accion')"
+                    class="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl text-xs uppercase tracking-widest">
+                    Cancelar
+                </button>
+                <button wire:click="confirmarModal" wire:loading.attr="disabled" wire:target="confirmarModal"
+                    class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-widest disabled:opacity-50">
+                    <span wire:loading.remove wire:target="confirmarModal">Confirmar</span>
+                    <span wire:loading wire:target="confirmarModal">Enviando...</span>
+                </button>
+            </div>
+        </div>
+    </x-modal>
 </div>

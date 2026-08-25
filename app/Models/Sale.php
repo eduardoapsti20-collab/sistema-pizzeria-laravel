@@ -23,6 +23,7 @@ class Sale extends Model
         'cliente_numero_documento',
         'cliente_denominacion',
         'cliente_direccion',
+        'cliente_email',
         'comprobante_serie',
         'comprobante_numero',
         'estado_sunat',
@@ -33,6 +34,8 @@ class Sale extends Model
         'sunat_mensaje',
         'sunat_respuesta',
         'comprobante_referencia_id',
+        'motivo_anulacion',
+        'ticket_anulacion',
     ];
 
     protected $casts = [
@@ -95,6 +98,23 @@ class Sale extends Model
     public function comprobanteAceptado(): bool
     {
         return $this->estado_sunat === 'aceptado';
+    }
+
+    /**
+     * Solo se puede pedir anulacion (comunicacion de baja) o nota de credito
+     * sobre un comprobante que SUNAT ya acepto, y que aun no este anulado
+     * ni sea en si mismo una nota de credito.
+     */
+    public function puedeAnularse(): bool
+    {
+        return $this->requiereSunat()
+            && $this->tipo_comprobante !== 'nota_credito'
+            && $this->comprobanteAceptado();
+    }
+
+    public function esNotaCredito(): bool
+    {
+        return $this->tipo_comprobante === 'nota_credito';
     }
 
     /**
