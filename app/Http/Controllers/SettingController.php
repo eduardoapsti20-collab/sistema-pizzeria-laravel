@@ -46,6 +46,7 @@ class SettingController extends Controller
 
             'documento_api_proveedor' => 'nullable|string|max:50',
             'documento_api_token' => 'nullable|string|max:255',
+            'dni_api_token' => 'nullable|string|max:255',
 
         ], [
             'company_name.required' => 'El nombre comercial de la empresa es obligatorio.',

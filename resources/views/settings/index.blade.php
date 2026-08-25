@@ -455,23 +455,15 @@
                             <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
                                 <i class="fas fa-id-card text-orange-500"></i> Consulta automática de DNI / RUC
                             </h3>
-                            <p class="text-slate-500 text-sm mb-6">Al escribir el DNI o RUC del cliente en caja, el sistema puede traer el nombre o razón social automáticamente. Necesitas una cuenta con un proveedor de consulta (ej. apis.net.pe, plan gratuito disponible). Puedes cambiar o reemplazar el token aquí cuando quieras, sin tocar el código.</p>
+                            <p class="text-slate-500 text-sm mb-6">Al escribir el DNI o RUC del cliente en caja, el sistema puede traer el nombre o razón social automáticamente. La consulta pública de DNI fue descontinuada por normativa de protección de datos, así que DNI y RUC ahora usan proveedores separados, cada uno con su propio token.</p>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Proveedor</label>
-                                    <select name="documento_api_proveedor"
-                                        class="w-full rounded-xl border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-medium">
-                                        <option value="apisnet" {{ old('documento_api_proveedor', $setting->documento_api_proveedor ?? 'apisnet') == 'apisnet' ? 'selected' : '' }}>apis.net.pe</option>
-                                    </select>
-                                </div>
-
-                                <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Token del proveedor</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Token RUC (decolecta.com)</label>
                                     <div class="relative">
                                         <input type="password" name="documento_api_token" id="documento_api_token"
                                             value="{{ old('documento_api_token', $setting->documento_api_token) }}"
-                                            placeholder="Tu token de apis.net.pe (déjalo vacío para desactivar)"
+                                            placeholder="Tu token de decolecta.com (déjalo vacío para desactivar)"
                                             class="w-full rounded-xl pr-12 @error('documento_api_token') border-red-500 focus:ring-red-500/10 focus:border-red-500 @else border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 @enderror transition-all font-medium">
                                         <button type="button" onclick="const i=document.getElementById('documento_api_token'); i.type = i.type==='password' ? 'text' : 'password';"
                                             class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-orange-600">
@@ -479,6 +471,23 @@
                                         </button>
                                     </div>
                                     @error('documento_api_token')
+                                        <p class="text-xs text-red-500 font-semibold mt-1 ml-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Token DNI (apidni.com)</label>
+                                    <div class="relative">
+                                        <input type="password" name="dni_api_token" id="dni_api_token"
+                                            value="{{ old('dni_api_token', $setting->dni_api_token) }}"
+                                            placeholder="Tu token de apidni.com (déjalo vacío para desactivar)"
+                                            class="w-full rounded-xl pr-12 @error('dni_api_token') border-red-500 focus:ring-red-500/10 focus:border-red-500 @else border-slate-200 focus:ring-orange-500/10 focus:border-orange-500 @enderror transition-all font-medium">
+                                        <button type="button" onclick="const i=document.getElementById('dni_api_token'); i.type = i.type==='password' ? 'text' : 'password';"
+                                            class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-orange-600">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    @error('dni_api_token')
                                         <p class="text-xs text-red-500 font-semibold mt-1 ml-1">{{ $message }}</p>
                                     @enderror
                                 </div>

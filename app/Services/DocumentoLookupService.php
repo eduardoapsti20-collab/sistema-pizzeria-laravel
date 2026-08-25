@@ -17,7 +17,7 @@ class DocumentoLookupService
 
     public function estaConfigurado(): bool
     {
-        return $this->settings && filled($this->settings->documento_api_token);
+        return $this->settings && (filled($this->settings->documento_api_token) || filled($this->settings->dni_api_token));
     }
 
     /**
@@ -32,10 +32,6 @@ class DocumentoLookupService
     {
         $numeroDocumento = trim($numeroDocumento);
 
-        if (!$this->estaConfigurado()) {
-            return null;
-        }
-
         if (strlen($numeroDocumento) === 8) {
             return $this->buscarDni($numeroDocumento);
         }
@@ -47,64 +43,87 @@ class DocumentoLookupService
         return null;
     }
 
+    /**
+     * DNI via apidni.com. La consulta publica gratuita de apis.net.pe/decolecta
+     * fue descontinuada (normativa de proteccion de datos personales), asi que
+     * DNI usa un proveedor de pago aparte, con su propio token.
+     */
     protected function buscarDni(string $dni): ?array
     {
-        return $this->consultar("https://api.apis.net.pe/v2/reniec/dni", [
-            'numero' => $dni,
-        ], function (array $data) {
-            $nombre = trim(
-                ($data['nombres'] ?? '') . ' ' .
-                ($data['apellidoPaterno'] ?? '') . ' ' .
-                ($data['apellidoMaterno'] ?? '')
-            );
+        if (!$this->settings || !filled($this->settings->dni_api_token)) {
+            return null;
+        }
 
-            return $nombre !== '' ? [
-                'denominacion' => $nombre,
-                'direccion' => null,
-            ] : null;
-        });
-    }
-
-    protected function buscarRuc(string $ruc): ?array
-    {
-        return $this->consultar("https://api.apis.net.pe/v2/sunat/ruc", [
-            'numero' => $ruc,
-        ], function (array $data) {
-            $razonSocial = $data['nombre'] ?? $data['razonSocial'] ?? null;
-
-            return $razonSocial ? [
-                'denominacion' => $razonSocial,
-                'direccion' => $data['direccion'] ?? null,
-            ] : null;
-        });
-    }
-
-    protected function consultar(string $url, array $query, callable $mapear): ?array
-    {
         try {
             $response = Http::timeout(6)
-                ->withToken($this->settings->documento_api_token)
+                ->withToken($this->settings->dni_api_token)
                 ->acceptJson()
-                ->get($url, $query);
+                ->get("https://apidni.com/api/v2/dni/{$dni}");
         } catch (\Throwable $e) {
-            Log::warning('DocumentoLookupService: fallo de conexion', ['error' => $e->getMessage()]);
+            Log::warning('DocumentoLookupService (DNI): fallo de conexion', ['error' => $e->getMessage()]);
             return null;
         }
 
         if (!$response->successful()) {
-            Log::warning('DocumentoLookupService: respuesta no exitosa', [
-                'status' => $response->status(),
-                'url' => $url,
-            ]);
+            Log::warning('DocumentoLookupService (DNI): respuesta no exitosa', ['status' => $response->status()]);
             return null;
         }
 
-        $data = $response->json();
+        $body = $response->json();
+        $data = $body['data'] ?? null;
 
         if (!is_array($data)) {
             return null;
         }
 
-        return $mapear($data);
+        $nombre = trim(
+            ($data['nombres'] ?? '') . ' ' .
+            ($data['apellido_paterno'] ?? '') . ' ' .
+            ($data['apellido_materno'] ?? '')
+        );
+
+        return $nombre !== '' ? [
+            'denominacion' => $nombre,
+            'direccion' => $data['direccion'] ?? null,
+        ] : null;
+    }
+
+    /**
+     * RUC via decolecta.com (la consulta de RUC si sigue disponible publicamente,
+     * a diferencia de DNI). Reemplazo del antiguo apis.net.pe.
+     */
+    protected function buscarRuc(string $ruc): ?array
+    {
+        if (!$this->settings || !filled($this->settings->documento_api_token)) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(6)
+                ->withToken($this->settings->documento_api_token)
+                ->acceptJson()
+                ->get('https://api.decolecta.com/v1/sunat/ruc', [
+                    'numero' => $ruc,
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning('DocumentoLookupService (RUC): fallo de conexion', ['error' => $e->getMessage()]);
+            return null;
+        }
+
+        if (!$response->successful()) {
+            Log::warning('DocumentoLookupService (RUC): respuesta no exitosa', ['status' => $response->status()]);
+            return null;
+        }
+
+        $data = $response->json();
+
+        if (!is_array($data) || empty($data['razon_social'])) {
+            return null;
+        }
+
+        return [
+            'denominacion' => $data['razon_social'],
+            'direccion' => $data['direccion'] ?? null,
+        ];
     }
 }

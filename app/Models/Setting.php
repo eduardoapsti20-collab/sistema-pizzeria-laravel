@@ -31,6 +31,7 @@ class Setting extends Model
 
         'documento_api_proveedor',
         'documento_api_token',
+        'dni_api_token',
     ];
 
     protected $casts = [
