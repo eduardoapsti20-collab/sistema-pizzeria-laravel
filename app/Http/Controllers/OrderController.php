@@ -105,7 +105,7 @@ class OrderController extends Controller
             $logoBase64 = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
         }
 
-        $width_mm = env('IMPRESION_SIZE') - 10;
+        $width_mm = ((int) env('IMPRESION_SIZE', 58)) - 10;
         $height_mm = 297;
 
         $width_pt = $this->mmToPoints($width_mm);
@@ -143,7 +143,7 @@ class OrderController extends Controller
             $logoBase64 = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
         }
 
-        $width_mm = env('IMPRESION_SIZE') - 10;
+        $width_mm = ((int) env('IMPRESION_SIZE', 58)) - 10;
 
         $height_mm = 297;
 
