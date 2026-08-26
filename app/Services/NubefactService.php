@@ -337,6 +337,10 @@ class NubefactService
             ];
         })->toArray();
 
+        $totalGravada = round(collect($items)->sum('subtotal'), 2);
+        $totalIgv = round(collect($items)->sum('igv'), 2);
+        $total = round($totalGravada + $totalIgv, 2);
+
         return [
             'operacion' => 'generar_comprobante',
             'tipo_de_comprobante' => $esFactura ? 1 : 2, // 1 = Factura, 2 = Boleta
@@ -350,9 +354,13 @@ class NubefactService
             'fecha_de_emision' => now()->format('d-m-Y'),
             'moneda' => 1, // 1 = Soles
             'porcentaje_de_igv' => 18.00,
-            'total_gravada' => round($sale->subtotal, 2),
-            'total_igv' => round($sale->tax, 2),
-            'total' => round($sale->total, 2),
+            // Se calculan sumando los items (fuente de verdad) en vez de leer
+            // sale->subtotal / sale->tax directo: esos campos pueden venir en
+            // 0 o desincronizados, y Nubefact rechaza si el header no cuadra
+            // exactamente con la suma de las lineas.
+            'total_gravada' => $totalGravada,
+            'total_igv' => $totalIgv,
+            'total' => $total,
             'enviar_automaticamente_a_la_sunat' => true,
             'enviar_automaticamente_al_cliente' => false,
             'items' => $items,
