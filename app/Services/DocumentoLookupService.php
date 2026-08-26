@@ -17,7 +17,7 @@ class DocumentoLookupService
 
     public function estaConfigurado(): bool
     {
-        return $this->settings && (filled($this->settings->documento_api_token) || filled($this->settings->dni_api_token));
+        return $this->settings && filled($this->settings->documento_api_token);
     }
 
     /**
@@ -44,11 +44,75 @@ class DocumentoLookupService
     }
 
     /**
-     * DNI via apidni.com. La consulta publica gratuita de apis.net.pe/decolecta
-     * fue descontinuada (normativa de proteccion de datos personales), asi que
-     * DNI usa un proveedor de pago aparte, con su propio token.
+     * DNI: primero se intenta con Decolecta (mismo token gratuito que ya se
+     * usa para RUC, 1000 consultas/mes gratis, sin costo adicional). Si no
+     * esta configurado o no devuelve datos, se intenta con apidni.com como
+     * respaldo opcional (solo si el usuario decide pagar ese servicio).
      */
     protected function buscarDni(string $dni): ?array
+    {
+        $resultado = $this->buscarDniDecolecta($dni);
+
+        if ($resultado) {
+            return $resultado;
+        }
+
+        return $this->buscarDniApidni($dni);
+    }
+
+    protected function buscarDniDecolecta(string $dni): ?array
+    {
+        if (!$this->settings || !filled($this->settings->documento_api_token)) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(6)
+                ->withToken($this->settings->documento_api_token)
+                ->acceptJson()
+                ->get('https://api.decolecta.com/v1/reniec/dni', [
+                    'numero' => $dni,
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning('DocumentoLookupService (DNI/Decolecta): fallo de conexion', ['error' => $e->getMessage()]);
+            return null;
+        }
+
+        if (!$response->successful()) {
+            Log::warning('DocumentoLookupService (DNI/Decolecta): respuesta no exitosa', ['status' => $response->status()]);
+            return null;
+        }
+
+        $data = $response->json();
+
+        if (!is_array($data)) {
+            return null;
+        }
+
+        // El formato exacto de campos de Decolecta para RENIEC ha variado
+        // segun la version de la API, asi que se contemplan varias
+        // posibilidades conocidas en vez de asumir una sola.
+        $nombre = trim(
+            ($data['nombres'] ?? $data['first_name'] ?? '') . ' ' .
+            ($data['apellido_paterno'] ?? $data['first_last_name'] ?? '') . ' ' .
+            ($data['apellido_materno'] ?? $data['second_last_name'] ?? '')
+        );
+
+        if ($nombre === '' && filled($data['full_name'] ?? null)) {
+            $nombre = $data['full_name'];
+        }
+
+        return $nombre !== '' ? [
+            'denominacion' => $nombre,
+            'direccion' => $data['direccion'] ?? $data['address'] ?? null,
+        ] : null;
+    }
+
+    /**
+     * Respaldo opcional de pago (apidni.com). Solo se usa si el usuario
+     * decide contratar ese servicio y pega su token en Ajustes.
+     */
+    protected function buscarDniApidni(string $dni): ?array
     {
         if (!$this->settings || !filled($this->settings->dni_api_token)) {
             return null;
@@ -60,12 +124,12 @@ class DocumentoLookupService
                 ->acceptJson()
                 ->get("https://apidni.com/api/v2/dni/{$dni}");
         } catch (\Throwable $e) {
-            Log::warning('DocumentoLookupService (DNI): fallo de conexion', ['error' => $e->getMessage()]);
+            Log::warning('DocumentoLookupService (DNI/apidni): fallo de conexion', ['error' => $e->getMessage()]);
             return null;
         }
 
         if (!$response->successful()) {
-            Log::warning('DocumentoLookupService (DNI): respuesta no exitosa', ['status' => $response->status()]);
+            Log::warning('DocumentoLookupService (DNI/apidni): respuesta no exitosa', ['status' => $response->status()]);
             return null;
         }
 
