@@ -216,9 +216,17 @@
                                             </button>
                                         </div>
                                     @else
-                                        <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                            🟡 Pendiente
-                                        </span>
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                                🟡 Pendiente
+                                            </span>
+                                            <button wire:click="reintentarEmision({{ $sale->id }})"
+                                                wire:loading.attr="disabled"
+                                                wire:target="reintentarEmision({{ $sale->id }})"
+                                                class="text-[9px] font-black text-amber-600 hover:text-amber-800 uppercase underline disabled:opacity-50">
+                                                Forzar envío
+                                            </button>
+                                        </div>
                                     @endif
                                         </div>
                                     @endif
@@ -351,6 +359,10 @@
                                     <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
                                         🟡 Pendiente
                                     </span>
+                                    <button wire:click="reintentarEmision({{ $sale->id }})"
+                                        class="text-[9px] font-black text-amber-600 uppercase underline">
+                                        Forzar envío
+                                    </button>
                                 @endif
                             </div>
 
