@@ -38,6 +38,14 @@ class NubefactService
             throw new RuntimeException('Esta venta es una nota de venta interna, no requiere emision ante SUNAT.');
         }
 
+        // Idempotencia: si esta venta YA tiene serie/numero asignado por
+        // Nubefact, jamas se debe volver a llamar "generar_comprobante" o se
+        // crea un documento duplicado (con un correlativo nuevo) por cada
+        // reintento. En ese caso solo consultamos el estado real.
+        if ($sale->comprobante_serie && $sale->comprobante_numero) {
+            return $this->consultarEstado($sale);
+        }
+
         if (!$this->estaConfigurado()) {
             $sale->update([
                 'estado_sunat' => 'error',

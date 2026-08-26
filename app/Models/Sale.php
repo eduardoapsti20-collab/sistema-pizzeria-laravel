@@ -101,6 +101,84 @@ class Sale extends Model
     }
 
     /**
+     * En ambiente Demo, Nubefact nunca envia el comprobante al SUNAT real,
+     * asi que "aceptada_por_sunat" jamas llega a true aunque todo funcione
+     * bien. Mostrar "Pendiente" para siempre confunde al usuario (parece que
+     * algo esta mal). Esta etiqueta refleja la realidad segun el ambiente.
+     */
+    public function getEstadoEtiquetaAttribute(): string
+    {
+        if ($this->estado_sunat === 'aceptado') {
+            return '🟢 Aceptado';
+        }
+
+        if ($this->estado_sunat === 'anulado') {
+            return '⚪ Anulado';
+        }
+
+        if ($this->estado_sunat === 'anulacion_solicitada') {
+            return '🔵 Anulación en proceso';
+        }
+
+        if ($this->estado_sunat === 'error') {
+            return '🔴 Error';
+        }
+
+        // pendiente
+        $ambiente = optional(\App\Models\Setting::first())->nubefact_ambiente;
+
+        if ($ambiente === 'demo' && $this->comprobante_numero) {
+            return '🔵 Enviado (Demo)';
+        }
+
+        return '🟡 Pendiente';
+    }
+
+    public function getEstadoClaseAttribute(): string
+    {
+        if ($this->estado_sunat === 'aceptado') {
+            return 'bg-emerald-50 text-emerald-600';
+        }
+
+        if ($this->estado_sunat === 'anulado') {
+            return 'bg-slate-100 text-slate-500';
+        }
+
+        if ($this->estado_sunat === 'anulacion_solicitada') {
+            return 'bg-sky-50 text-sky-600';
+        }
+
+        if ($this->estado_sunat === 'error') {
+            return 'bg-rose-50 text-rose-600';
+        }
+
+        $ambiente = optional(\App\Models\Setting::first())->nubefact_ambiente;
+
+        if ($ambiente === 'demo' && $this->comprobante_numero) {
+            return 'bg-blue-50 text-blue-600';
+        }
+
+        return 'bg-amber-50 text-amber-600';
+    }
+
+    /**
+     * En modo Demo, "consultar estado" nunca va a devolver aceptado (SUNAT
+     * real jamas procesa estos documentos), asi que no tiene sentido seguir
+     * mostrando un boton para refrescarlo indefinidamente una vez que ya
+     * fue enviado con exito.
+     */
+    public function puedeConsultarEstado(): bool
+    {
+        if (!$this->comprobante_numero) {
+            return true; // aun no se envio, el boton dispara el envio
+        }
+
+        $ambiente = optional(\App\Models\Setting::first())->nubefact_ambiente;
+
+        return $ambiente !== 'demo';
+    }
+
+    /**
      * Solo se puede pedir anulacion (comunicacion de baja) o nota de credito
      * sobre un comprobante que SUNAT ya acepto, y que aun no este anulado
      * ni sea en si mismo una nota de credito.

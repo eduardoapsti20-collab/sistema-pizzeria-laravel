@@ -192,21 +192,21 @@
                                             </span>
 
                                             @if ($sale->estado_sunat === 'aceptado')
-                                        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                            🟢 Aceptado
+                                        <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                            {{ $sale->estado_etiqueta }}
                                         </span>
                                     @elseif ($sale->estado_sunat === 'anulado')
-                                        <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                            ⚪ Anulado
+                                        <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                            {{ $sale->estado_etiqueta }}
                                         </span>
                                     @elseif ($sale->estado_sunat === 'anulacion_solicitada')
-                                        <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                            🔵 Anulación en proceso
+                                        <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                            {{ $sale->estado_etiqueta }}
                                         </span>
                                     @elseif ($sale->estado_sunat === 'error')
                                         <div class="flex flex-col items-center gap-1">
-                                            <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                                🔴 Error
+                                            <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                                {{ $sale->estado_etiqueta }}
                                             </span>
                                             <button wire:click="reintentarEmision({{ $sale->id }})"
                                                 wire:loading.attr="disabled"
@@ -217,15 +217,17 @@
                                         </div>
                                     @else
                                         <div class="flex flex-col items-center gap-1">
-                                            <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                                🟡 Pendiente
+                                            <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                                {{ $sale->estado_etiqueta }}
                                             </span>
-                                            <button wire:click="reintentarEmision({{ $sale->id }})"
-                                                wire:loading.attr="disabled"
-                                                wire:target="reintentarEmision({{ $sale->id }})"
-                                                class="text-[9px] font-black text-amber-600 hover:text-amber-800 uppercase underline disabled:opacity-50">
-                                                Forzar envío
-                                            </button>
+                                            @if ($sale->puedeConsultarEstado())
+                                                <button wire:click="reintentarEmision({{ $sale->id }})"
+                                                    wire:loading.attr="disabled"
+                                                    wire:target="reintentarEmision({{ $sale->id }})"
+                                                    class="text-[9px] font-black text-amber-600 hover:text-amber-800 uppercase underline disabled:opacity-50">
+                                                    {{ $sale->comprobante_numero ? 'Actualizar estado' : 'Forzar envío' }}
+                                                </button>
+                                            @endif
                                         </div>
                                     @endif
                                         </div>
@@ -336,33 +338,35 @@
 
                             <div class="flex items-center justify-between">
                                 @if ($sale->estado_sunat === 'aceptado')
-                                    <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                        🟢 Aceptado
+                                    <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        {{ $sale->estado_etiqueta }}
                                     </span>
                                 @elseif ($sale->estado_sunat === 'anulado')
-                                    <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                        ⚪ Anulado
+                                    <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        {{ $sale->estado_etiqueta }}
                                     </span>
                                 @elseif ($sale->estado_sunat === 'anulacion_solicitada')
-                                    <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                        🔵 En proceso
+                                    <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        {{ $sale->estado_etiqueta }}
                                     </span>
                                 @elseif ($sale->estado_sunat === 'error')
-                                    <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                        🔴 Error
+                                    <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        {{ $sale->estado_etiqueta }}
                                     </span>
                                     <button wire:click="reintentarEmision({{ $sale->id }})"
                                         class="text-[9px] font-black text-orange-600 uppercase underline">
                                         Reintentar
                                     </button>
                                 @else
-                                    <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
-                                        🟡 Pendiente
+                                    <span class="inline-flex items-center gap-1 {{ $sale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
+                                        {{ $sale->estado_etiqueta }}
                                     </span>
-                                    <button wire:click="reintentarEmision({{ $sale->id }})"
-                                        class="text-[9px] font-black text-amber-600 uppercase underline">
-                                        Forzar envío
-                                    </button>
+                                    @if ($sale->puedeConsultarEstado())
+                                        <button wire:click="reintentarEmision({{ $sale->id }})"
+                                            class="text-[9px] font-black text-amber-600 uppercase underline">
+                                            {{ $sale->comprobante_numero ? 'Actualizar estado' : 'Forzar envío' }}
+                                        </button>
+                                    @endif
                                 @endif
                             </div>
 
@@ -442,13 +446,7 @@
                     <div class="space-y-3 text-sm">
                         <div class="flex items-center justify-between">
                             <span class="text-slate-400 text-xs uppercase font-bold">Estado</span>
-                            @if ($detalleSale->estado_sunat === 'aceptado')
-                                <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">🟢 Aceptado</span>
-                            @elseif ($detalleSale->estado_sunat === 'error')
-                                <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">🔴 Error</span>
-                            @else
-                                <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">🟡 Pendiente</span>
-                            @endif
+                            <span class="inline-flex items-center gap-1 {{ $detalleSale->estado_clase }} px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">{{ $detalleSale->estado_etiqueta }}</span>
                         </div>
 
                         <div class="flex items-center justify-between">
@@ -472,6 +470,13 @@
                         @if ($detalleSale->sunat_mensaje)
                             <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-600">
                                 {{ $detalleSale->sunat_mensaje }}
+                            </div>
+                        @endif
+
+                        @if (!$detalleSale->puedeConsultarEstado() && $detalleSale->estado_sunat === 'pendiente')
+                            <div class="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">
+                                <i class="fas fa-circle-info"></i>
+                                En modo <strong>Demo</strong>, Nubefact no envía el comprobante al SUNAT real, por eso queda enviado pero nunca cambia a "Aceptado". Esto es normal y no requiere ninguna acción.
                             </div>
                         @endif
 
@@ -514,11 +519,13 @@
                 </button>
 
                 @if ($modalAccion === 'detalle')
-                    <button wire:click="consultarEstadoModal" wire:loading.attr="disabled" wire:target="consultarEstadoModal"
-                        class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-widest disabled:opacity-50">
-                        <span wire:loading.remove wire:target="consultarEstadoModal">Consultar estado</span>
-                        <span wire:loading wire:target="consultarEstadoModal">Consultando...</span>
-                    </button>
+                    @if (optional(\App\Models\Sale::find($modalSaleId))->puedeConsultarEstado())
+                        <button wire:click="consultarEstadoModal" wire:loading.attr="disabled" wire:target="consultarEstadoModal"
+                            class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-widest disabled:opacity-50">
+                            <span wire:loading.remove wire:target="consultarEstadoModal">Consultar estado</span>
+                            <span wire:loading wire:target="consultarEstadoModal">Consultando...</span>
+                        </button>
+                    @endif
                 @else
                     <button wire:click="confirmarModal" wire:loading.attr="disabled" wire:target="confirmarModal"
                         class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-widest disabled:opacity-50">
