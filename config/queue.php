@@ -13,7 +13,13 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    // Por defecto 'sync': procesa los jobs (como el envio a Nubefact) al
+    // instante, en el mismo request, sin depender de un worker en segundo
+    // plano. En Railway, un worker separado dentro del mismo contenedor
+    // se caia silenciosamente dejando ventas en 'pendiente' para siempre.
+    // Si en el futuro se agrega un servicio de worker dedicado y estable,
+    // se puede volver a 'database' seteando QUEUE_CONNECTION en Railway.
+    'default' => env('QUEUE_CONNECTION', 'sync'),
 
     /*
     |--------------------------------------------------------------------------
