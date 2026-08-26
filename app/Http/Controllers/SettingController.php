@@ -38,6 +38,7 @@ class SettingController extends Controller
 
             'kitchen_printer_name' => 'nullable|string|max:255',
 
+            'regimen_tributario' => 'nullable|in:nuevo_rus,general_mype',
             'nubefact_ruta' => 'nullable|url|max:255',
             'nubefact_token' => 'nullable|string|max:255',
             'nubefact_ambiente' => 'nullable|in:demo,produccion',

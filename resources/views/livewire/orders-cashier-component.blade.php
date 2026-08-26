@@ -207,7 +207,7 @@
                                 Comprobante a emitir
                             </label>
 
-                            <div class="grid grid-cols-3 gap-2">
+                            <div class="grid {{ $esNuevoRus ? 'grid-cols-2' : 'grid-cols-3' }} gap-2">
                                 <button type="button" wire:click="setTipoComprobante('nota_venta')"
                                     class="py-2.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all border-2
                                         {{ $tipoComprobante === 'nota_venta' ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300' }}">
@@ -218,12 +218,17 @@
                                         {{ $tipoComprobante === 'boleta' ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300' }}">
                                     Boleta
                                 </button>
-                                <button type="button" wire:click="setTipoComprobante('factura')"
-                                    class="py-2.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all border-2
-                                        {{ $tipoComprobante === 'factura' ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300' }}">
-                                    Factura
-                                </button>
+                                @unless ($esNuevoRus)
+                                    <button type="button" wire:click="setTipoComprobante('factura')"
+                                        class="py-2.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all border-2
+                                            {{ $tipoComprobante === 'factura' ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300' }}">
+                                        Factura
+                                    </button>
+                                @endunless
                             </div>
+                            @if ($esNuevoRus)
+                                <p class="text-[10px] text-slate-400 mt-2 ml-1">Tu negocio está en el Nuevo RUS: no se emiten facturas, y las boletas no desglosan IGV.</p>
+                            @endif
 
                             @if (in_array($tipoComprobante, ['boleta', 'factura']))
                                 <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100">

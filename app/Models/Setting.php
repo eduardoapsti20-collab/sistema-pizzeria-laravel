@@ -28,6 +28,7 @@ class Setting extends Model
         'nubefact_ambiente',
         'nubefact_serie_boleta',
         'nubefact_serie_factura',
+        'regimen_tributario',
 
         'documento_api_proveedor',
         'documento_api_token',

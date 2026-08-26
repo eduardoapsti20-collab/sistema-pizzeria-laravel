@@ -45,6 +45,7 @@ class OrdersCashierComponent extends Component
     public $clienteDireccion = '';
     public $buscandoDocumento = false;
     public $documentoNoEncontrado = false;
+    public $esNuevoRus = false;
 
     public function mount()
     {
@@ -53,6 +54,7 @@ class OrdersCashierComponent extends Component
         $this->direct_printing = $setting->direct_printing;
         $this->paymentMethods = PaymentMethod::all();
         $this->boxes = CashRegister::where('status', 'open')->get();
+        $this->esNuevoRus = $setting->regimen_tributario === 'nuevo_rus';
     }
 
     public function getPaidProperty()
@@ -162,6 +164,15 @@ class OrdersCashierComponent extends Component
 
     public function setTipoComprobante($tipo)
     {
+        if ($tipo === 'factura' && $this->esNuevoRus) {
+            $this->dispatch('swal', [
+                'title' => 'No disponible',
+                'text' => 'Tu negocio está en el Nuevo RUS: solo puedes emitir boletas, no facturas.',
+                'icon' => 'info',
+            ]);
+            return;
+        }
+
         $this->tipoComprobante = $tipo;
         $this->clienteTipoDocumento = $tipo === 'factura' ? 'RUC' : 'DNI';
     }

@@ -392,6 +392,16 @@
                             </h3>
                             <p class="text-slate-500 text-sm mb-6">Pega aquí la Ruta y el Token que te da Nubefact. Podrás cambiarlos aquí mismo cuando pases de modo demo a producción, sin tocar el código.</p>
 
+                            <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                <label class="text-[10px] font-black text-amber-700 uppercase tracking-widest ml-1">Régimen tributario</label>
+                                <select name="regimen_tributario"
+                                    class="w-full mt-1 rounded-xl border-amber-200 focus:ring-amber-500/10 focus:border-amber-500 transition-all font-medium text-sm">
+                                    <option value="nuevo_rus" {{ old('regimen_tributario', $setting->regimen_tributario) == 'nuevo_rus' ? 'selected' : '' }}>Nuevo RUS (solo boletas, sin IGV desglosado)</option>
+                                    <option value="general_mype" {{ old('regimen_tributario', $setting->regimen_tributario) == 'general_mype' ? 'selected' : '' }}>Régimen General / MYPE (boleta y factura, IGV 18%)</option>
+                                </select>
+                                <p class="text-[11px] text-amber-700 mt-2">Verifica tu régimen real en <a href="https://e-consultaruc.sunat.gob.pe/cl-ti-itmrconsruc/FrameCriterioBusquedaWeb.jsp" target="_blank" class="underline font-bold">Consulta RUC de SUNAT</a>. Elegir mal esto puede generar boletas/facturas inválidas.</p>
+                            </div>
+
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div class="md:col-span-2 space-y-1">
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ruta (URL) de la API</label>

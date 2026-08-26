@@ -38,6 +38,15 @@ class NubefactService
             throw new RuntimeException('Esta venta es una nota de venta interna, no requiere emision ante SUNAT.');
         }
 
+        if ($sale->tipo_comprobante === 'factura' && $this->settings->regimen_tributario === 'nuevo_rus') {
+            $sale->update([
+                'estado_sunat' => 'error',
+                'sunat_mensaje' => 'El Nuevo RUS no permite emitir facturas, solo boletas. Cambia el tipo de comprobante a Boleta.',
+            ]);
+
+            throw new RuntimeException('El Nuevo RUS no permite emitir facturas, solo boletas.');
+        }
+
         // Idempotencia: si esta venta YA tiene serie/numero asignado por
         // Nubefact, jamas se debe volver a llamar "generar_comprobante" o se
         // crea un documento duplicado (con un correlativo nuevo) por cada
@@ -318,17 +327,30 @@ class NubefactService
     protected function construirPayload(Sale $sale): array
     {
         $esFactura = $sale->tipo_comprobante === 'factura';
+        $esRus = $this->settings->regimen_tributario === 'nuevo_rus';
 
         $siguienteNumero = $this->siguienteNumero($sale->tipo_comprobante);
         $serie = $esFactura
             ? $this->settings->nubefact_serie_factura
             : $this->settings->nubefact_serie_boleta;
 
-        $items = $sale->details->map(function ($detalle) {
+        // En Nuevo RUS no se desglosa IGV: el precio de venta ES el total,
+        // sin dividir entre 1.18. El contribuyente paga una cuota fija mensual
+        // aparte, por eso SUNAT no permite mostrar IGV separado en sus boletas.
+        $items = $sale->details->map(function ($detalle) use ($esRus) {
             $descripcion = $detalle->product?->name ?? 'Producto';
             $cantidad = (float) $detalle->quantity;
-            $valorUnitario = round(((float) $detalle->price) / 1.18, 2); // precio sin IGV
-            $igvItem = round(((float) $detalle->price) - $valorUnitario, 2) * $cantidad;
+            $precioUnitario = (float) $detalle->price;
+
+            if ($esRus) {
+                $valorUnitario = $precioUnitario;
+                $totalItem = round($precioUnitario * $cantidad, 2);
+                $igvItem = 0.0;
+            } else {
+                $valorUnitario = round($precioUnitario / 1.18, 2); // precio sin IGV
+                $totalItem = round($precioUnitario * $cantidad, 2);
+                $igvItem = round(($precioUnitario - $valorUnitario) * $cantidad, 2);
+            }
 
             return [
                 'unidad_de_medida' => 'NIU',
@@ -336,18 +358,30 @@ class NubefactService
                 'descripcion' => $descripcion,
                 'cantidad' => $cantidad,
                 'valor_unitario' => $valorUnitario,
-                'precio_unitario' => (float) $detalle->price,
+                'precio_unitario' => $precioUnitario,
                 'subtotal' => round($valorUnitario * $cantidad, 2),
-                'tipo_de_igv' => 1, // 1 = Gravado - Operacion Onerosa
-                'igv' => round($igvItem, 2),
-                'total' => (float) $detalle->subtotal,
+                'tipo_de_igv' => $esRus ? 2 : 1, // 2 = Exonerado, 1 = Gravado - Operacion Onerosa
+                'igv' => $igvItem,
+                'total' => $totalItem,
                 'anticipo_regularizacion' => false,
             ];
         })->toArray();
 
-        $totalGravada = round(collect($items)->sum('subtotal'), 2);
-        $totalIgv = round(collect($items)->sum('igv'), 2);
-        $total = round($totalGravada + $totalIgv, 2);
+        // Se calculan sumando los items (fuente de verdad) en vez de leer
+        // sale->subtotal / sale->tax directo: esos campos pueden venir en
+        // 0 o desincronizados, y Nubefact rechaza si el header no cuadra
+        // exactamente con la suma de las lineas.
+        $totalVenta = round(collect($items)->sum('total'), 2);
+
+        if ($esRus) {
+            $totalGravada = 0.0;
+            $totalExonerada = round(collect($items)->sum('subtotal'), 2);
+            $totalIgv = 0.0;
+        } else {
+            $totalGravada = round(collect($items)->sum('subtotal'), 2);
+            $totalExonerada = 0.0;
+            $totalIgv = round(collect($items)->sum('igv'), 2);
+        }
 
         return [
             'operacion' => 'generar_comprobante',
@@ -361,14 +395,11 @@ class NubefactService
             'cliente_direccion' => $sale->cliente_direccion ?: '-',
             'fecha_de_emision' => now()->format('d-m-Y'),
             'moneda' => 1, // 1 = Soles
-            'porcentaje_de_igv' => 18.00,
-            // Se calculan sumando los items (fuente de verdad) en vez de leer
-            // sale->subtotal / sale->tax directo: esos campos pueden venir en
-            // 0 o desincronizados, y Nubefact rechaza si el header no cuadra
-            // exactamente con la suma de las lineas.
+            'porcentaje_de_igv' => $esRus ? 0.00 : 18.00,
             'total_gravada' => $totalGravada,
+            'total_exonerada' => $totalExonerada,
             'total_igv' => $totalIgv,
-            'total' => $total,
+            'total' => $totalVenta,
             'enviar_automaticamente_a_la_sunat' => true,
             'enviar_automaticamente_al_cliente' => false,
             'items' => $items,
