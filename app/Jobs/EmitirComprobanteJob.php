@@ -42,9 +42,18 @@ class EmitirComprobanteJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
 
-            // Dejamos que Laravel reintente segun $tries/$backoff antes de
-            // marcar el job como fallido definitivamente.
-            throw $e;
+            // No se relanza la excepcion: con QUEUE_CONNECTION=sync, el job
+            // corre en el mismo request del cobro, y un fallo de Nubefact
+            // (caida de red, timeout, rechazo) nunca debe romper el cobro
+            // ya confirmado en caja. NubefactService ya deja la venta en
+            // estado_sunat='error' en casi todos los casos; esto es una
+            // red de seguridad final por si el error ocurrio antes de eso.
+            if ($this->sale->fresh()->estado_sunat !== 'error') {
+                $this->sale->update([
+                    'estado_sunat' => 'error',
+                    'sunat_mensaje' => 'Error inesperado al emitir: ' . $e->getMessage(),
+                ]);
+            }
         }
     }
 

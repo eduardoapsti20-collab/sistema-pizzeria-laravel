@@ -144,10 +144,18 @@ class SalesIndexComponent extends Component
 
         \App\Jobs\EmitirComprobanteJob::dispatch($sale);
 
-        $this->dispatch('swal', [
-            'title' => 'Reintento enviado',
-            'text' => 'Se volverá a intentar la emisión en unos segundos.',
-            'icon' => 'success',
+        $sale->refresh();
+
+        $mensajes = [
+            'aceptado' => ['title' => 'Aceptado', 'text' => 'SUNAT aceptó el comprobante correctamente.', 'icon' => 'success'],
+            'pendiente' => ['title' => 'Enviado', 'text' => 'Se envió correctamente. Sigue pendiente de confirmación de SUNAT (normal en modo demo).', 'icon' => 'info'],
+            'error' => ['title' => 'No se pudo enviar', 'text' => $sale->sunat_mensaje ?: 'Ocurrió un error al enviar a Nubefact.', 'icon' => 'error'],
+        ];
+
+        $this->dispatch('swal', $mensajes[$sale->estado_sunat] ?? [
+            'title' => 'Listo',
+            'text' => 'Se procesó el reintento.',
+            'icon' => 'info',
         ]);
     }
 
