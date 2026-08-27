@@ -66,17 +66,25 @@ class NubefactService
 
         $sale->loadMissing('details.product');
 
-        // SUNAT rechaza items con precio S/0.00 marcados como "operacion
-        // onerosa" (venta pagada). Un producto gratis requiere una
-        // declaracion especial (codigo de tributo 9996) que este sistema
-        // aun no soporta, asi que se bloquea con un mensaje accionable en
-        // vez de mandar un comprobante que Nubefact/SUNAT va a rechazar.
-        $itemsSinPrecio = $sale->details->filter(fn ($d) => (float) $d->price <= 0);
-        if ($itemsSinPrecio->isNotEmpty()) {
-            $nombres = $itemsSinPrecio->map(fn ($d) => $d->product?->name ?? 'Producto sin nombre')->unique()->implode(', ');
+        // SUNAT rechaza items con precio S/0.00 O cantidad 0 (total de linea
+        // en S/0.00) marcados como "operacion onerosa" (venta pagada). Un
+        // item gratis requiere una declaracion especial (codigo de tributo
+        // 9996) que este sistema aun no soporta, asi que se bloquea con un
+        // mensaje accionable en vez de mandar un comprobante que Nubefact/
+        // SUNAT va a rechazar.
+        $itemsInvalidos = $sale->details->filter(function ($d) {
+            return (float) $d->price <= 0 || (float) $d->quantity <= 0;
+        });
 
-            $mensaje = "No se puede emitir: el producto \"{$nombres}\" tiene precio S/0.00. "
-                . 'Corrige el precio en tu catálogo de Productos (debe ser mayor a cero) y reintenta.';
+        if ($itemsInvalidos->isNotEmpty()) {
+            $detalleProblema = $itemsInvalidos->map(function ($d) {
+                $nombre = $d->product?->name ?? 'Producto sin nombre';
+                $motivo = (float) $d->price <= 0 ? 'precio S/0.00' : 'cantidad 0';
+                return "\"{$nombre}\" ({$motivo})";
+            })->unique()->implode(', ');
+
+            $mensaje = "No se puede emitir: el producto {$detalleProblema}. "
+                . 'Verifica el precio y la cantidad de ese producto en el pedido (ambos deben ser mayores a cero) y reintenta.';
 
             $sale->update([
                 'estado_sunat' => 'error',
