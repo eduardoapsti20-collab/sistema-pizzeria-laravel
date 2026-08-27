@@ -473,6 +473,15 @@
                             </div>
                         @endif
 
+                        @if ($detalleSale->estado_sunat === 'error' && !empty($detalleSale->sunat_respuesta['payload_enviado'] ?? null))
+                            <details class="bg-rose-50 rounded-xl p-3 text-xs">
+                                <summary class="text-rose-700 font-bold cursor-pointer">
+                                    <i class="fas fa-bug"></i> Ver datos enviados a Nubefact (para soporte técnico)
+                                </summary>
+                                <pre class="mt-2 whitespace-pre-wrap break-all text-[10px] text-rose-900 select-all">{{ json_encode($detalleSale->sunat_respuesta['payload_enviado'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                            </details>
+                        @endif
+
                         @if (!$detalleSale->puedeConsultarEstado() && $detalleSale->estado_sunat === 'pendiente')
                             <div class="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">
                                 <i class="fas fa-circle-info"></i>

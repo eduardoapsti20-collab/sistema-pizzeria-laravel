@@ -110,12 +110,12 @@ class NubefactService
         if (isset($data['errors'])) {
             $mensaje = $data['errors'];
 
-            Log::warning('Nubefact: rechazo o error', ['sale_id' => $sale->id, 'respuesta' => $data]);
+            Log::warning('Nubefact: rechazo o error', ['sale_id' => $sale->id, 'respuesta' => $data, 'payload_enviado' => $payload]);
 
             $sale->update([
                 'estado_sunat' => 'error',
                 'sunat_mensaje' => is_string($mensaje) ? $mensaje : json_encode($mensaje),
-                'sunat_respuesta' => $data,
+                'sunat_respuesta' => array_merge($data, ['payload_enviado' => $payload]),
             ]);
 
             return $sale;
